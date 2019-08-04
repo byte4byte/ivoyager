@@ -1,6 +1,7 @@
 #include "ivoyager.h"
 #include "task.h"
 #include "url_utils.c"
+#include "dom.h"
 #include <stdio.h>
 
 ContentWindow g_TOP_WINDOW;
@@ -92,7 +93,7 @@ BOOL RunOpenUrlTask(Task *task) {
 			else {
 				AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 			}
-			break;
+			//break;
 		}
 		case RUN_TASK_STATE_PARSE_DOM: {
 			READ_CHUNK *read_chunk;
@@ -101,18 +102,14 @@ BOOL RunOpenUrlTask(Task *task) {
 				break;
 			}
 			
-			read_chunk->read_buff[sizeof(read_chunk->read_buff)-1] = '\0';
-			MessageBox(g_TOP_WINDOW.hWnd, read_chunk->read_buff, "chunk", MB_OK);
-			
-			GlobalFree((HGLOBAL)read_chunk);
-			RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
+			if (ParseDOMChunk(&g_TOP_WINDOW, read_chunk->read_buff, read_chunk->len)) {
+				GlobalFree((HGLOBAL)read_chunk);
+				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
+			}
 			break;
 		}
 	}
 	
-	//MessageBox(g_TOP_WINDOW.hWnd, ((DownloadFileTaskParams *)task->params)->url, "Opening URL", MB_OK);
-	//MessageBox(g_TOP_WINDOW.hWnd, url_info->domain, "Opening URL", MB_OK);
-	//MessageBox(g_TOP_WINDOW.hWnd, url_info->getvars, "Opening URL", MB_OK);
 	//task->dwNextRun = (GetTickCount() + 5000);
 	
 	if (ret) { // free data
