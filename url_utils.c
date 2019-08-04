@@ -139,7 +139,7 @@ URL_INFO *GetUrlInfo(LPSTR url) {
 		LPSTR path = NULL;
 		LPSTR getvars = NULL;
 		LPSTR ptrPort = NULL;
-		int port = url_info->protocol == HTTPS_PROTOCOL ? 443 : 80;
+		url_info->port = url_info->protocol == HTTPS_PROTOCOL ? 443 : 80;
 		
 		path = strchr(domain, '/');
 		if (path) {
@@ -170,7 +170,7 @@ URL_INFO *GetUrlInfo(LPSTR url) {
 		ptrPort = strchr(domain, ':');
 		if (ptrPort) {
 			*ptrPort = '\0';
-			port = atoi(ptrPort+1);
+			url_info->port = atoi(ptrPort+1);
 		}
 		
 		if (path) {

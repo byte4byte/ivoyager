@@ -20,27 +20,10 @@ typedef struct TaskData { // important "data" and "next" come first as list allo
 	BYTE type;
 } TaskData;
 
-typedef struct DownloadFileTaskParams {
-	LPSTR url;
-} DownloadFileTaskParams;
-
-typedef struct ParseHtmlTaskParams {
-	LPSTR html_buff_start;
-	int len;
-} ParseHtmlTaskParams;
-
-typedef struct ParseCSSTaskParams {
-	LPSTR css_buff_start;
-	int len;
-} ParseCSSTaskParams;
-
-#define TASK_LOADURL 0
-
 typedef struct Task Task;
 typedef struct Task {
 	int type;
 	DWORD totalTime;
-	ContentWindow *window;
 	LPVOID params;
 	BOOL locked; /* for multhreaded mode */
     DWORD dwNextRun;

@@ -1,20 +1,131 @@
 #include "ivoyager.h"
 #include "task.h"
+#include "url_utils.c"
+#include <stdio.h>
 
 ContentWindow g_TOP_WINDOW;
+static LPSTR g_szDefURL = "d:/index.html";
 
-static LPSTR g_szDefURL = "/index.html";
+typedef struct DownloadFileTaskParams {
+	LPSTR url;
+	ContentWindow *window;
+} DownloadFileTaskParams;
 
-#include "url_utils.c"
+typedef struct ParseHtmlTaskParams {
+	LPSTR html_buff_start;
+	int len;
+} ParseHtmlTaskParams;
+
+typedef struct ParseCSSTaskParams {
+	LPSTR css_buff_start;
+	int len;
+} ParseCSSTaskParams;
+
+#define TASK_LOADURL 0
 
 BOOL RunOpenUrlTask(Task *task) {
-	URL_INFO *url_info = GetUrlInfo(((DownloadFileTaskParams *)task->params)->url);
-	MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "Opening URL", MB_OK);
+	typedef struct {
+		URL_INFO *url_info;
+		FILE *fp;
+	} OPEN_URL_DATA;
+	
+	typedef struct {
+		char read_buff[1024];
+		int len;
+	} READ_CHUNK;
+	
+	OPEN_URL_DATA *open_url_data;
+	BOOL ret = FALSE;
+	LPARAM state;
+	
+	#define RUN_TASK_VAR_STATE   0
+	#define RUN_TASK_VAR_DATA  	 1
+	#define RUN_TASK_VAR_CHUNKS  2
+	
+	#define RUN_TASK_STATE_OPEN_STREAM 0
+	#define RUN_TASK_STATE_READ_STREAM 1
+	#define RUN_TASK_STATE_PARSE_DOM   2
+	
+	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, (LPARAM *)&state, NULL);
+	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM *)&open_url_data, NULL);
+	switch (state) {
+		case RUN_TASK_STATE_OPEN_STREAM:
+		{
+			URL_INFO *url_info = GetUrlInfo(((DownloadFileTaskParams *)task->params)->url);
+			if (! url_info) {
+				ret = TRUE;
+				break;
+			}
+			switch (url_info->protocol) {
+				case FILE_PROTOCOL:
+				{
+					FILE *fp = fopen(url_info->path, "rb");
+					if (! fp) { // 404
+						ret = TRUE;
+						break;
+					}
+					
+					open_url_data = (OPEN_URL_DATA *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
+					memset(open_url_data, 0, sizeof(OPEN_URL_DATA));
+					
+					open_url_data->fp = fp;
+					open_url_data->url_info = url_info;
+					
+					AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
+					AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
+					break;
+				}
+				default:
+					ret = TRUE;
+					break;
+			}
+			break;
+		}
+		case RUN_TASK_STATE_READ_STREAM:
+		{
+			READ_CHUNK *read_chunk = GlobalAlloc(GMEM_FIXED, sizeof(READ_CHUNK));
+			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff), open_url_data->fp);
+			if (read_chunk->len <= 0) {
+				GlobalFree((HGLOBAL)read_chunk);
+				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
+			}
+			else {
+				AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+			}
+			break;
+		}
+		case RUN_TASK_STATE_PARSE_DOM: {
+			READ_CHUNK *read_chunk;
+			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, (LPARAM *)&read_chunk)) {
+				ret = TRUE;
+				break;
+			}
+			
+			read_chunk->read_buff[sizeof(read_chunk->read_buff)-1] = '\0';
+			MessageBox(g_TOP_WINDOW.hWnd, read_chunk->read_buff, "chunk", MB_OK);
+			
+			GlobalFree((HGLOBAL)read_chunk);
+			RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
+			break;
+		}
+	}
+	
+	//MessageBox(g_TOP_WINDOW.hWnd, ((DownloadFileTaskParams *)task->params)->url, "Opening URL", MB_OK);
 	//MessageBox(g_TOP_WINDOW.hWnd, url_info->domain, "Opening URL", MB_OK);
 	//MessageBox(g_TOP_WINDOW.hWnd, url_info->getvars, "Opening URL", MB_OK);
 	//task->dwNextRun = (GetTickCount() + 5000);
-	FreeUrlInfo(url_info);
-	return TRUE;
+	
+	if (ret) { // free data
+		MessageBoxA(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
+		if (open_url_data) {
+			if (open_url_data->fp) fclose(open_url_data->fp);
+			FreeUrlInfo(open_url_data->url_info);
+			GlobalFree((HGLOBAL)open_url_data);
+		}
+		GlobalFree((HGLOBAL)((DownloadFileTaskParams *)task->params)->url);
+		GlobalFree((HGLOBAL)task->params);
+	}
+	return ret;
 }
 
 
@@ -41,10 +152,10 @@ void OpenUrl(ContentWindow *window, LPSTR url) {
 	loadUrlTask = (Task *)GlobalAlloc(GMEM_FIXED, sizeof(Task));
 	memset(loadUrlTask, 0, sizeof(Task));
 	loadUrlTask->type = TASK_LOADURL;
-	loadUrlTask->window = window;
 
 	params = (DownloadFileTaskParams *)GlobalAlloc(GMEM_FIXED, sizeof(DownloadFileTaskParams));
 	params->url = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(url)+1);
+	params->window = window;
 	
 	lstrcpy(params->url, url);
 

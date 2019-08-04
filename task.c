@@ -1,11 +1,11 @@
 #include "task.h"
 
 #ifndef NOTHREADS
-CRITICAL_SECTION g_TASK_CS;
+static CRITICAL_SECTION g_TASK_CS;
 #endif
 
-TaskQueue g_TASK_QUEUE;
-int g_CURR_TASK_INDEX = 0;
+static TaskQueue g_TASK_QUEUE;
+static int g_CURR_TASK_INDEX = 0;
 
 BOOL RemoveTask(Task *task) {
 
@@ -206,7 +206,7 @@ BOOL RemoveCustomTaskVar(Task *task, DWORD id) {
 BOOL GetCustomTaskVar(Task *task, DWORD id, LPARAM *var, TaskData **parentTaskData) {
 	TaskData *curr;
 
-	*var = -1;
+	*var = 0;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -387,7 +387,7 @@ BOOL GetCustomTaskListData(Task *task, DWORD id, int idx, LPARAM *out) {
 	TaskData *start;
 	int i = 0;
 
-	*out = -1;
+	*out = 0;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -421,7 +421,7 @@ BOOL GetCustomTaskListData(Task *task, DWORD id, int idx, LPARAM *out) {
 
 BOOL GetNextTask(Task **task) {
 	TaskQueue *curr;
-	int idx = 0;
+	int idx;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&g_TASK_CS);
@@ -459,14 +459,6 @@ BOOL GetNextTask(Task **task) {
 
 
 void FreeTask(Task *task) {
-	switch (task->type) {
-		case TASK_LOADURL:
-			if (task->params) {
-				if (((DownloadFileTaskParams *)task->params)->url) GlobalFree((HGLOBAL)((DownloadFileTaskParams *)task->params)->url);
-				GlobalFree((HGLOBAL)task->params);
-			}
-			break;
-	}
 	RemoveAllCustomTaskData(task);
 	RemoveTask(task);
 #ifndef NOTHREADS
