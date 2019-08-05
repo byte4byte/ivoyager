@@ -44,8 +44,8 @@
 
 
 		var = GetNumCustomTaskListData(loadUrlTask, 3);
-		if (var != 4) {
-			wsprintf(buffer, "task data test 6 failed - expected %ld got %ld", 4, var);
+		if (var != 3) {
+			wsprintf(buffer, "task data test 6 failed - expected %ld got %ld", 3, var);
 			MessageBox(NULL, buffer, "", MB_OK);
 		}		
 		//wsprintf(buffer, "num: %d", var);
@@ -61,8 +61,8 @@
 		//MessageBox(NULL, buffer, "", MB_OK); // -1
 
 		GetCustomTaskListData(loadUrlTask, 3, 1, &var);
-		if (var != 1) {
-			wsprintf(buffer, "task data test 8 failed - expected %ld got %ld", 1, var);
+		if (var != 2) {
+			wsprintf(buffer, "task data test 8 failed - expected %ld got %ld", 2, var);
 			MessageBox(NULL, buffer, "", MB_OK);
 		}				
 		//wsprintf(buffer, "idx1: %d", var);
@@ -104,6 +104,7 @@
 		//wsprintf(buffer, "removed1: %d", var);
 		//MessageBox(NULL, buffer, "", MB_OK); // -1
 
+		RemoveAllCustomTaskData(loadUrlTask);
 
 	}
 #endif
