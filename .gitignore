@@ -1,2 +1,9 @@
 *.exe
 .vs
+*.err
+*.BAK
+*.OBJ
+*.MK
+*.MK1
+*.TGT
+*.WPJ

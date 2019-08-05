@@ -86,6 +86,6 @@ typedef struct DomNode {
 	DomNode *next;
 } DomNode;
 
-BOOL ParseDOMChunk(ContentWindow *window, char *buff, int len);
+BOOL  ParseDOMChunk(ContentWindow  *window, char  *buff, int len);
 
 #endif

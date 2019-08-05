@@ -1,43 +1,48 @@
 #include "ivoyager.h"
+#include "utils.c"
 #include "task.h"
-#include "url_utils.c"
+#include "url.c"
 #include "dom.h"
 #include <stdio.h>
 
 ContentWindow g_TOP_WINDOW;
-static LPSTR g_szDefURL = "d:/index.html";
+static LPSTR g_szDefURL = "d:/index.htm";
 
 typedef struct DownloadFileTaskParams {
-	LPSTR url;
-	ContentWindow *window;
+	LPSTR  url;
+	ContentWindow  *window;
 } DownloadFileTaskParams;
 
 typedef struct ParseHtmlTaskParams {
-	LPSTR html_buff_start;
+	LPSTR  html_buff_start;
 	int len;
 } ParseHtmlTaskParams;
 
 typedef struct ParseCSSTaskParams {
-	LPSTR css_buff_start;
+	LPSTR  css_buff_start;
 	int len;
 } ParseCSSTaskParams;
 
 #define TASK_LOADURL 0
 
-BOOL RunOpenUrlTask(Task *task) {
+BOOL  RunOpenUrlTask(Task  *task) {
 	typedef struct {
-		URL_INFO *url_info;
+		URL_INFO  *url_info;
 		FILE *fp;
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[1024];
+		char read_buff[128];
 		int len;
 	} READ_CHUNK;
 	
-	OPEN_URL_DATA *open_url_data;
+	
+	OPEN_URL_DATA  *open_url_data;
 	BOOL ret = FALSE;
 	LPARAM state;
+	
+	MessageBox(g_TOP_WINDOW.hWnd, "RUN 1", "", MB_OK);
+	
 	
 	#define RUN_TASK_VAR_STATE   0
 	#define RUN_TASK_VAR_DATA  	 1
@@ -47,12 +52,14 @@ BOOL RunOpenUrlTask(Task *task) {
 	#define RUN_TASK_STATE_READ_STREAM 1
 	#define RUN_TASK_STATE_PARSE_DOM   2
 	
-	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, (LPARAM *)&state, NULL);
-	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM *)&open_url_data, NULL);
+	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, &state, NULL);
+	MessageBox(g_TOP_WINDOW.hWnd, "RUN 2", "", MB_OK);
+	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM  *)&open_url_data, NULL);
+	MessageBox(g_TOP_WINDOW.hWnd, "RUN 3", "", MB_OK);
 	switch (state) {
 		case RUN_TASK_STATE_OPEN_STREAM:
 		{
-			URL_INFO *url_info = GetUrlInfo(((DownloadFileTaskParams *)task->params)->url);
+			URL_INFO  *url_info = GetUrlInfo(((DownloadFileTaskParams  *)task->params)->url);
 			if (! url_info) {
 				ret = TRUE;
 				break;
@@ -60,14 +67,19 @@ BOOL RunOpenUrlTask(Task *task) {
 			switch (url_info->protocol) {
 				case FILE_PROTOCOL:
 				{
-					FILE *fp = fopen(url_info->path, "rb");
+					FILE *fp;
+					MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
+					fp = _ffopen(url_info->path, "rb");
 					if (! fp) { // 404
+						MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);
 						ret = TRUE;
 						break;
 					}
 					
-					open_url_data = (OPEN_URL_DATA *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
-					memset(open_url_data, 0, sizeof(OPEN_URL_DATA));
+					MessageBox(g_TOP_WINDOW.hWnd, "OPENED", "", MB_OK);
+					
+					open_url_data = (OPEN_URL_DATA  *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
+					//memset(open_url_data, 0, sizeof(OPEN_URL_DATA));
 					
 					open_url_data->fp = fp;
 					open_url_data->url_info = url_info;
@@ -84,28 +96,42 @@ BOOL RunOpenUrlTask(Task *task) {
 		}
 		case RUN_TASK_STATE_READ_STREAM:
 		{
-			READ_CHUNK *read_chunk = GlobalAlloc(GMEM_FIXED, sizeof(READ_CHUNK));
-			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff), open_url_data->fp);
+			READ_CHUNK near *read_chunk = LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
+			MessageBox(g_TOP_WINDOW.hWnd, "read", "", MB_OK);
+			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff)-1, open_url_data->fp);
+			MessageBox(g_TOP_WINDOW.hWnd, "read 2", "", MB_OK);
 			if (read_chunk->len <= 0) {
-				GlobalFree((HGLOBAL)read_chunk);
+				MessageBox(g_TOP_WINDOW.hWnd, "read 3", "", MB_OK);
+				LocalFree((HGLOBAL)read_chunk);
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
+				MessageBox(g_TOP_WINDOW.hWnd, "read 4", "", MB_OK);
 			}
-			else {
-				AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+			else {	
+			MessageBox(g_TOP_WINDOW.hWnd, "read 5", "", MB_OK);
+				AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)NearPtrToFar((char *)read_chunk, sizeof(READ_CHUNK)));
+				MessageBox(g_TOP_WINDOW.hWnd, "read 6", "", MB_OK);
+				LocalFree((HGLOBAL)read_chunk);
 			}
 			//break;
 		}
 		case RUN_TASK_STATE_PARSE_DOM: {
-			READ_CHUNK *read_chunk;
-			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, (LPARAM *)&read_chunk)) {
+			READ_CHUNK  *read_chunk;
+			MessageBox(g_TOP_WINDOW.hWnd, "dom", "", MB_OK);
+			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, (LPARAM  *)&read_chunk)) {
+				MessageBox(g_TOP_WINDOW.hWnd, "dom1", "", MB_OK);
 				ret = TRUE;
 				break;
 			}
 			
-			if (ParseDOMChunk(&g_TOP_WINDOW, read_chunk->read_buff, read_chunk->len)) {
+			MessageBox(g_TOP_WINDOW.hWnd, "dom2", "", MB_OK);
+			if (ParseDOMChunk(&g_TOP_WINDOW, (char  *)&read_chunk->read_buff[0], read_chunk->len)) {
+				MessageBox(g_TOP_WINDOW.hWnd, "dom3", "", MB_OK);
 				GlobalFree((HGLOBAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
+				MessageBox(g_TOP_WINDOW.hWnd, "dom4", "", MB_OK);
 			}
+			
+			MessageBox(g_TOP_WINDOW.hWnd, "dom5", "", MB_OK);
 			break;
 		}
 	}
@@ -113,20 +139,20 @@ BOOL RunOpenUrlTask(Task *task) {
 	//task->dwNextRun = (GetTickCount() + 5000);
 	
 	if (ret) { // free data
-		MessageBoxA(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
+		MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
 		if (open_url_data) {
 			if (open_url_data->fp) fclose(open_url_data->fp);
 			FreeUrlInfo(open_url_data->url_info);
 			GlobalFree((HGLOBAL)open_url_data);
 		}
-		GlobalFree((HGLOBAL)((DownloadFileTaskParams *)task->params)->url);
+		GlobalFree((HGLOBAL)((DownloadFileTaskParams  *)task->params)->url);
 		GlobalFree((HGLOBAL)task->params);
 	}
 	return ret;
 }
 
 
-BOOL RunTask(Task *task) {
+BOOL  RunTask(Task  *task) {
 	BOOL ret = TRUE;	
 	// return true if task completed
 	// return false to be scheduled to run again later for continous tasks
@@ -140,14 +166,14 @@ BOOL RunTask(Task *task) {
 	return ret;
 }
 
-void OpenUrl(ContentWindow *window, LPSTR url) {
+void  OpenUrl(ContentWindow  *window, LPSTR  url) {
 	// TODO: Clear out window
 
-	DownloadFileTaskParams *params;
-	Task *loadUrlTask;
+	DownloadFileTaskParams  *params;
+	Task  *loadUrlTask;
 	
-	loadUrlTask = (Task *)GlobalAlloc(GMEM_FIXED, sizeof(Task));
-	memset(loadUrlTask, 0, sizeof(Task));
+	loadUrlTask = (Task  *)GlobalAlloc(GMEM_FIXED, sizeof(Task));
+	_fmemset(loadUrlTask, 0, sizeof(Task));
 	loadUrlTask->type = TASK_LOADURL;
 
 	params = (DownloadFileTaskParams *)GlobalAlloc(GMEM_FIXED, sizeof(DownloadFileTaskParams));
@@ -156,17 +182,17 @@ void OpenUrl(ContentWindow *window, LPSTR url) {
 	
 	lstrcpy(params->url, url);
 
-	loadUrlTask->params = params;
+	loadUrlTask->params = (LPARAM)params;
 
 	AddTask(loadUrlTask);
 	
-	#include "tests/task_data_unittest.c"
+	#include "tests/taskdata.c"
 }
 
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
-LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = 25;
 
 	switch (msg) {
@@ -231,17 +257,17 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int i = 0;
 	
 #ifdef NOTHREADS
-	Task *currTask;
+	Task  *currTask;
 #else
 	DWORD threadId;
 #endif
 
 	g_hInstance = hInstance;
 
-	memset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
+	_fmemset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
 	InitTaskSystem();
 
-	#include "tests/path_norm_unittest.c"
+	#include "tests/path.c"
 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -277,7 +303,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (msg.message == WM_TIMER && msg.wParam == 1) {
 				DWORD start = GetTickCount();
 				for (i = 0; i < NUM_THREADS; i++) {
-					if (GetNextTask(&currTask)) {
+					if (GetNextTask((Task  **)&currTask)) {
 						RunTask(currTask);
 						if ((GetTickCount() - start) > 3000) break;
 					} else break;
