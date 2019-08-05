@@ -20,7 +20,7 @@ static BOOL  IsAbsolutePath(LPSTR  url) {
 // TODO: Wide chars & symlink support
 static LPSTR  NormalizePath(LPSTR  path) {
     LPSTR ret = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+3);
-	LPSTR ptr = ret, curr_dir_ptr = NULL, prev_dir_ptr = NULL;
+    	LPSTR ptr = ret, curr_dir_ptr = NULL, prev_dir_ptr = NULL;
 	lstrcpy(ret, path);
 	
 	//return ret;
@@ -113,14 +113,14 @@ static LPSTR  NormalizePath(LPSTR  path) {
 	return ret;
 }
 
-static URL_INFO  *  GetUrlInfo(LPSTR  url) {
-	LPSTR tmp_url;
+static URL_INFO far *  GetUrlInfo(LPSTR  url) {
+	char far *tmp_url;
 	LPSTR username = NULL;
 	LPSTR domain;
 	LPSTR path = NULL;
 	LPSTR getvars = NULL;
 	LPSTR ptrPort = NULL;
-	URL_INFO  *url_info = (URL_INFO  *)GlobalAlloc(GMEM_FIXED, sizeof(URL_INFO));
+	URL_INFO far *url_info = (URL_INFO  far *)GlobalAlloc(GMEM_FIXED, sizeof(URL_INFO));
 	_fmemset(url_info, 0, sizeof(URL_INFO));
 	if (! _strnicmp(url, "http://", 7)) {
 		url_info->protocol = HTTP_PROTOCOL;
@@ -184,25 +184,25 @@ static URL_INFO  *  GetUrlInfo(LPSTR  url) {
 		}
 		
 		if (path) {
-			url_info->path = GlobalAlloc(GMEM_FIXED, lstrlen(path)+1+1);
+			url_info->path =  (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+1+1);
 			url_info->path[0] = '/';
 			lstrcpy(&url_info->path[1], path+1);
 		}
 		else {
-			url_info->path = GlobalAlloc(GMEM_FIXED, 2);
+			url_info->path = (LPSTR)GlobalAlloc(GMEM_FIXED, 2);
 			url_info->path[0] = '/';
 			url_info->path[1] = '\0';
 		}
 		if (username) {
-			url_info->username = GlobalAlloc(GMEM_FIXED, lstrlen(username)+1);
+			url_info->username = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(username)+1);
 			lstrcpy(url_info->username, username);
 		}
 		
-		url_info->domain = GlobalAlloc(GMEM_FIXED, lstrlen(domain)+1);
+		url_info->domain = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(domain)+1);
 		lstrcpy(url_info->domain, domain);
 		
 		if (getvars) {
-			url_info->getvars = GlobalAlloc(GMEM_FIXED, lstrlen(getvars)+1);
+			url_info->getvars = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(getvars)+1);
 			lstrcpy(url_info->getvars, getvars);
 		}
 		
@@ -212,7 +212,7 @@ static URL_INFO  *  GetUrlInfo(LPSTR  url) {
 	return url_info;
 }
 
-static  BOOL FreeUrlInfo(URL_INFO  *url_info) {
+static  BOOL FreeUrlInfo(URL_INFO far *url_info) {
 	if (url_info) {
 		if (url_info->path) {
 			GlobalFree((HGLOBAL)url_info->path);

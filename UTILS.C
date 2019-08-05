@@ -2,7 +2,7 @@
 #define _UTILS_C
 
 static char near *FarStrToNear(const char far *str) {
-	char near *l_str = LocalAlloc(LMEM_FIXED, lstrlen(str)+1);
+	char near *l_str = (char near *)LocalAlloc(LMEM_FIXED, lstrlen(str)+1);
 	char near *l_str_beg = l_str;
 	while (*str) {
 	*l_str = *str;
@@ -14,7 +14,7 @@ static char near *FarStrToNear(const char far *str) {
 }
 
 static char near *FarPtrToNear(const char far *str, int len) {
-	char near *l_str = LocalAlloc(LMEM_FIXED, len);
+	char near *l_str = (char near *)LocalAlloc(LMEM_FIXED, len);
 	int i;
 	char near *l_str_beg = l_str;
 	for (i = 0; i < len; i++) {
@@ -25,10 +25,10 @@ static char near *FarPtrToNear(const char far *str, int len) {
 	return l_str_beg;
 }
 
-static char  *NearPtrToFar(const char near *str, int len) {
-	char  *l_str = GlobalAlloc(GMEM_FIXED, len);
+static char far *NearPtrToFar(const char near *str, int len) {
+	char far *l_str = (char far *)GlobalAlloc(GMEM_FIXED, len);
 	int i;
-	char  *l_str_beg = l_str;
+	char far *l_str_beg = l_str;
 	for (i = 0; i < len; i++) {
 		*l_str = *str;
 		l_str++;
@@ -38,9 +38,9 @@ static char  *NearPtrToFar(const char near *str, int len) {
 }
 
 
-static char  *NearStrToFar(const char near *str) {
-	char  *l_str = GlobalAlloc(GMEM_FIXED, strlen(str)+1);
-	char  *l_str_beg = l_str;
+static char far *NearStrToFar(const char near *str) {
+	char far *l_str = (char far *)GlobalAlloc(GMEM_FIXED, strlen(str)+1);
+	char far *l_str_beg = l_str;
 	while (*str) {
 	*l_str = *str;
 	l_str++;
@@ -102,8 +102,8 @@ static FILE *_ffopen(const char far *filename, const char far *mode) {
 	
 	ret = fopen(l_filename, l_mode);
 	
-	LocalFree(l_filename);
-	LocalFree(l_mode);
+	LocalFree((HGLOBAL)l_filename);
+	LocalFree((HGLOBAL)l_mode);
 	
 	return ret;
 }

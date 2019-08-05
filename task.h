@@ -6,7 +6,7 @@
 typedef struct TaskDataList TaskDataList;
 typedef struct TaskDataList {
 	LPARAM data;
-	TaskDataList  *next;
+	TaskDataList far *next;
 } TaskDataList;
 
 #define TASK_DATA_VAR	0
@@ -15,7 +15,7 @@ typedef struct TaskDataList {
 typedef struct TaskData TaskData;
 typedef struct TaskData { // important "data" and "next" come first as list allocates TaskDataList to save memory
 	LPARAM data; // if type == TASK_DATA_LIST data is a ptr to TaskDataList
-	TaskData  *next;
+	TaskData far *next;
 	DWORD id;
 	BYTE type;
 } TaskData;
@@ -27,8 +27,8 @@ typedef struct Task {
 	LPVOID params;
 	BOOL locked; /* for multhreaded mode */
     DWORD dwNextRun;
-	Task *parentTask;
-	TaskData  *taskData;
+	Task far *parentTask;
+	TaskData  far *taskData;
 #ifndef NOTHREADS
 	CRITICAL_SECTION cs;
 #endif
@@ -36,27 +36,27 @@ typedef struct Task {
 
 typedef struct TaskQueue TaskQueue;
 typedef struct TaskQueue {
-	Task  *task;
-	TaskQueue  *next;
+	Task far *task;
+	TaskQueue far *next;
 } TaskQueue;
 
 void  InitTaskSystem();
-void  FreeTask(Task  *task);
-BOOL  GetNextTask(Task  **task);
-BOOL  AddTask(Task  *task);
-BOOL  RemoveTask(Task  *task);
+void  FreeTask(Task far *task);
+BOOL  GetNextTask(Task far **task);
+BOOL  AddTask(Task far *task);
+BOOL  RemoveTask(Task far *task);
 
-BOOL  RemoveAllCustomTaskData(Task  *task);
+BOOL  RemoveAllCustomTaskData(Task far *task);
 
 // arraylist var functions
-BOOL  GetCustomTaskListData(Task  *task, DWORD id, int idx, LPARAM  *out);
-BOOL  RemoveCustomTaskListData(Task  *task, DWORD id, int idx);
-int  AddCustomTaskListData(Task  *task, DWORD id, LPARAM data);
-int  GetNumCustomTaskListData(Task  *task, DWORD id);
+BOOL  GetCustomTaskListData(Task far *task, DWORD id, int idx, LPARAM  far *out);
+BOOL  RemoveCustomTaskListData(Task far *task, DWORD id, int idx);
+int  AddCustomTaskListData(Task far *task, DWORD id, LPARAM data);
+int  GetNumCustomTaskListData(Task far *task, DWORD id);
 
 // scaler var functions
-BOOL  GetCustomTaskVar(Task  *task, DWORD id, LPARAM  *var, TaskData  **parentTaskData);
-BOOL  RemoveCustomTaskVar(Task  *task, DWORD id);
-BOOL  AddCustomTaskVar(Task  *task, DWORD id, LPARAM var);
+BOOL  GetCustomTaskVar(Task far *task, DWORD id, LPARAM far *var, TaskData far **parentTaskData);
+BOOL  RemoveCustomTaskVar(Task far *task, DWORD id);
+BOOL  AddCustomTaskVar(Task far *task, DWORD id, LPARAM var);
 
 #endif

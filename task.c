@@ -8,10 +8,10 @@ static CRITICAL_SECTION g_TASK_CS;
 static TaskQueue g_TASK_QUEUE;
 static int g_CURR_TASK_INDEX = 0;
 
-BOOL  RemoveTask(Task  *task) {
+BOOL  RemoveTask(Task  far *task) {
 
-	TaskQueue  *curr;
-	TaskQueue  *prev;
+	TaskQueue far *curr;
+	TaskQueue far *prev;
 	int idx;
 
 #ifndef NOTHREADS
@@ -47,8 +47,8 @@ BOOL  RemoveTask(Task  *task) {
 	return FALSE;
 }
 
-BOOL  AddTask(Task  *task) {
-	TaskQueue  *curr;
+BOOL  AddTask(Task far *task) {
+	TaskQueue far *curr;
 
 #ifndef NOTHREADS
 	InitializeCriticalSection(&task->cs);
@@ -61,7 +61,7 @@ BOOL  AddTask(Task  *task) {
 	curr = &g_TASK_QUEUE;
 	do {
 		if (! curr->next) {
-			curr->next = (TaskQueue *)GlobalAlloc(GMEM_FIXED, sizeof(TaskQueue));
+			curr->next = (TaskQueue far *)GlobalAlloc(GMEM_FIXED, sizeof(TaskQueue));
 			_fmemset(curr->next, 0, sizeof(TaskQueue));
 			curr = curr->next;
 			curr->task = task;
@@ -82,8 +82,8 @@ BOOL  AddTask(Task  *task) {
 	return FALSE;	
 }
 
-static TaskData  * GetTaskData(Task  *task, DWORD id) {
-	TaskData  *curr;
+static TaskData far * GetTaskData(Task far *task, DWORD id) {
+	TaskData far *curr;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -107,8 +107,8 @@ static TaskData  * GetTaskData(Task  *task, DWORD id) {
 	return NULL;
 }
 
-BOOL  SetCustomTaskData(Task  *task, DWORD id, LPARAM var, BYTE type) {
-	TaskData  *curr;
+BOOL  SetCustomTaskData(Task far *task, DWORD id, LPARAM var, BYTE type) {
+	TaskData far *curr;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -130,8 +130,8 @@ BOOL  SetCustomTaskData(Task  *task, DWORD id, LPARAM var, BYTE type) {
 	return FALSE;
 }
 
-BOOL  AddCustomTaskData(Task  *task, DWORD id, LPARAM var, BYTE type) {
-	TaskData  *curr;
+BOOL  AddCustomTaskData(Task far *task, DWORD id, LPARAM var, BYTE type) {
+	TaskData far *curr;
 
 	if (SetCustomTaskData(task, id, var, type)) return TRUE;
 
@@ -142,7 +142,7 @@ BOOL  AddCustomTaskData(Task  *task, DWORD id, LPARAM var, BYTE type) {
 	curr = task->taskData;
 	do {
 		if (! curr || ! curr->next) {
-			TaskData *node = (TaskData *)GlobalAlloc(GMEM_FIXED, sizeof(TaskData));
+			TaskData far *node = (TaskData far *)GlobalAlloc(GMEM_FIXED, sizeof(TaskData));
 			_fmemset(node, 0, sizeof(TaskData));
 			node->id = id;
 			node->type = type;
@@ -164,13 +164,13 @@ BOOL  AddCustomTaskData(Task  *task, DWORD id, LPARAM var, BYTE type) {
 	return FALSE;
 }
 
-BOOL  AddCustomTaskVar(Task  *task, DWORD id, LPARAM var) {
+BOOL  AddCustomTaskVar(Task far *task, DWORD id, LPARAM var) {
 	return AddCustomTaskData(task, id, var, TASK_DATA_VAR);
 }
 
-BOOL  RemoveCustomTaskVar(Task  *task, DWORD id) {
-	TaskData  *curr;
-	TaskData  *prev;
+BOOL  RemoveCustomTaskVar(Task far *task, DWORD id) {
+	TaskData far *curr;
+	TaskData far *prev;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -204,8 +204,8 @@ BOOL  RemoveCustomTaskVar(Task  *task, DWORD id) {
 	return FALSE;
 }
 
-BOOL  GetCustomTaskVar(Task  *task, DWORD id, LPARAM  *var, TaskData  **parentTaskData) {
-	TaskData  *curr;
+BOOL  GetCustomTaskVar(Task far *task, DWORD id, LPARAM far *var, TaskData far **parentTaskData) {
+	TaskData far *curr;
 
 	*var = 0;
 
@@ -233,10 +233,10 @@ BOOL  GetCustomTaskVar(Task  *task, DWORD id, LPARAM  *var, TaskData  **parentTa
 	return FALSE;
 }
 
-BOOL  RemoveAllCustomTaskData(Task  *task) {
-	TaskData  *start;
-	TaskData  *prev;
-	TaskData  *node;
+BOOL  RemoveAllCustomTaskData(Task far *task) {
+	TaskData far *start;
+	TaskData far *prev;
+	TaskData far *node;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
@@ -246,11 +246,11 @@ BOOL  RemoveAllCustomTaskData(Task  *task) {
 	while (node) {
 		
 		if (node->type == TASK_DATA_LIST) {
-			TaskData  *lstart;
-			TaskData  *lprev;
-			TaskData  *lnode;
+			TaskData far *lstart;
+			TaskData far *lprev;
+			TaskData far *lnode;
 
-			lstart = lnode = lprev = (TaskData *)node->data;
+			lstart = lnode = lprev = (TaskData far *)node->data;
 			while (lnode) {
 				lprev = lnode;
 				lnode = lnode->next;
@@ -273,15 +273,15 @@ BOOL  RemoveAllCustomTaskData(Task  *task) {
 	return TRUE;
 }
 
-int  GetNumCustomTaskListData(Task  *task, DWORD id) {
-	TaskData  *start;
+int  GetNumCustomTaskListData(Task far *task, DWORD id) {
+	TaskData far *start;
 	int idx = 0;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
 #endif
 
-	if (! GetCustomTaskVar(task, id, (LPVOID)&start, NULL)) {
+	if (! GetCustomTaskVar(task, id, (LPARAM far *)&start, NULL)) {
 #ifndef NOTHREADS
 		LeaveCriticalSection(&task->cs);
 #endif
@@ -300,11 +300,11 @@ int  GetNumCustomTaskListData(Task  *task, DWORD id) {
 }
 
 
-int  AddCustomTaskListData(Task  *task, DWORD id, LPARAM data) {
-	TaskData  *start;
+int  AddCustomTaskListData(Task far *task, DWORD id, LPARAM data) {
+	TaskData far *start;
 	int idx = 0;
 
-	TaskData *node = GlobalAlloc(GMEM_FIXED, sizeof(TaskData));
+	TaskData far *node = (TaskData far *)GlobalAlloc(GMEM_FIXED, sizeof(TaskData));
 	_fmemset(node, 0, sizeof(TaskData));
 	node->data = data;
 
@@ -312,7 +312,7 @@ int  AddCustomTaskListData(Task  *task, DWORD id, LPARAM data) {
 	EnterCriticalSection(&task->cs);
 #endif
 
-	if (GetCustomTaskVar(task, id, (LPVOID)&start, NULL)) {
+	if (GetCustomTaskVar(task, id, (LPARAM far *)&start, NULL)) {
 		while (start->next) {
 			idx++;
 			start = start->next;
@@ -336,18 +336,18 @@ int  AddCustomTaskListData(Task  *task, DWORD id, LPARAM data) {
 	return idx;
 }
 
-BOOL  RemoveCustomTaskListData(Task  *task, DWORD id, int idx) {
-	TaskData  *start;
-	TaskData  *node;
-	TaskData  *prev;
-	TaskData  *parent;
+BOOL  RemoveCustomTaskListData(Task far *task, DWORD id, int idx) {
+	TaskData far *start;
+	TaskData far *node;
+	TaskData far *prev;
+	TaskData far *parent;
 	int i = 0;
 
 #ifndef NOTHREADS
 	EnterCriticalSection(&task->cs);
 #endif
 
-	if (! GetCustomTaskVar(task, id, (LPARAM  *)&start, (TaskData  **)&parent)) {
+	if (! GetCustomTaskVar(task, id, (LPARAM far *)&start, (TaskData far **)&parent)) {
 #ifndef NOTHREADS
 		LeaveCriticalSection(&task->cs);
 #endif
@@ -384,8 +384,8 @@ BOOL  RemoveCustomTaskListData(Task  *task, DWORD id, int idx) {
 	return TRUE;
 }
 
-BOOL  GetCustomTaskListData(Task  *task, DWORD id, int idx, LPARAM  *out) {
-	TaskData  *start;
+BOOL  GetCustomTaskListData(Task  far *task, DWORD id, int idx, LPARAM  far *out) {
+	TaskData far *start;
 	int i = 0;
 
 	*out = 0;
@@ -420,8 +420,8 @@ BOOL  GetCustomTaskListData(Task  *task, DWORD id, int idx, LPARAM  *out) {
 }
 
 
-BOOL  GetNextTask(Task  **task) {
-	TaskQueue  *curr;
+BOOL  GetNextTask(Task far **task) {
+	TaskQueue far *curr;
 	int idx;
 
 #ifndef NOTHREADS
@@ -459,7 +459,7 @@ BOOL  GetNextTask(Task  **task) {
 }
 
 
-void  FreeTask(Task  *task) {
+void  FreeTask(Task far *task) {
 	RemoveAllCustomTaskData(task);
 	RemoveTask(task);
 #ifndef NOTHREADS

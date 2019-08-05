@@ -22,7 +22,7 @@
 #define NUM_THREADS 5
 
 #define TEST_PATH_NORMAL
-//#define DEBUG_TASK_DATA_FUNCS
+#define DEBUG_TASK_DATA_FUNCS
 
 #include "dom.h"
 #include "task.h"
