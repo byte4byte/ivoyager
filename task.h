@@ -1,13 +1,13 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include "ivoyager.h"
+//#include "ivoyager.h"
 
-typedef struct TaskDataList TaskDataList;
+/*typedef struct TaskDataList TaskDataList;
 typedef struct TaskDataList {
 	LPARAM data;
 	TaskDataList far *next;
-} TaskDataList;
+} TaskDataList;*/
 
 #define TASK_DATA_VAR	0
 #define TASK_DATA_LIST	1
@@ -58,5 +58,7 @@ int  GetNumCustomTaskListData(Task far *task, DWORD id);
 BOOL  GetCustomTaskVar(Task far *task, DWORD id, LPARAM far *var, TaskData far **parentTaskData);
 BOOL  RemoveCustomTaskVar(Task far *task, DWORD id);
 BOOL  AddCustomTaskVar(Task far *task, DWORD id, LPARAM var);
+
+void printTaskData(Task far *task);
 
 #endif

@@ -276,8 +276,8 @@ DWORD WINAPI workerProc(LPVOID unused) {
 int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 	//MessageBox(NULL, "voyager", "", MB_OK);
 
-	WNDCLASS wc;
-	MSG msg;
+	static WNDCLASS wc;
+	static MSG msg;
 	HWND browserWin;
 	int i = 0;
 	
@@ -294,7 +294,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	g_hInstance = hInstance;
 
 	_fmemset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
-	InitTaskSystem();
+	//InitTaskSystem();
 
 	#include "tests/path.c"
 

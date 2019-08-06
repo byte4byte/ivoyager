@@ -1,3 +1,4 @@
+#include "ivoyager.h"
 #include "task.h"
 #include "utils.c"
 
@@ -98,7 +99,7 @@ static TaskData far * GetTaskData(Task far *task, DWORD id) {
 			return curr;
 		}
 		curr = curr->next;
-	} while (curr);
+	}
 
 #ifndef NOTHREADS
 	LeaveCriticalSection(&task->cs);
@@ -128,6 +129,27 @@ BOOL  SetCustomTaskData(Task far *task, DWORD id, LPARAM var, BYTE type) {
 	LeaveCriticalSection(&task->cs);
 #endif
 	return FALSE;
+}
+
+void printTaskData(Task far *task) {
+	static char buff[1024];
+	static char tmpbuff[100];
+	int len = 0;
+	TaskData far *curr;
+	
+	strcpy(buff, "");
+	
+	curr = task->taskData;
+	while (curr) {
+		wsprintf(tmpbuff, "var: %ld = %ld\n", curr->id, curr->data);
+		strcat(buff, tmpbuff);
+		len++;
+		curr = curr->next;
+	} 
+	wsprintf(tmpbuff, "len = %d", len);
+	strcat(buff, tmpbuff);
+	
+	MessageBox(NULL, buff, "", MB_OK);
 }
 
 BOOL  AddCustomTaskData(Task far *task, DWORD id, LPARAM var, BYTE type) {
