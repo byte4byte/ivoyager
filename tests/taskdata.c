@@ -56,13 +56,8 @@
 
 
 		var = GetNumCustomTaskListData(loadUrlTask, 3);
-<<<<<<< HEAD
 		if ((int)var != 4) {
 			wsprintf(buffer, "task data test 6 failed - expected %ld got %ld", 4, var);
-=======
-		if (var != 3) {
-			wsprintf(buffer, "task data test 6 failed - expected %ld got %ld", 3, var);
->>>>>>> 2601fd360f90a472f7d9492bcc8b67edf5569f68
 			MessageBox(NULL, buffer, "", MB_OK);
 			printTaskData(loadUrlTask);
 		}		
