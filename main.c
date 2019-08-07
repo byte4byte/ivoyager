@@ -176,7 +176,11 @@ void  OpenUrl(ContentWindow  far *window, LPSTR  url) {
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
+#ifdef WIN3_1
 static FARPROC oldAddressBarProc;
+#else
+static WNDPROC oldAddressBarProc;
+#endif
 
 LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
@@ -204,7 +208,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			{
 				RECT rc;
 				GetClientRect(hWnd, &rc);
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, rc.right, fontHeight, hWnd, 33, g_hInstance, NULL);
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, rc.right, fontHeight, hWnd, NULL, g_hInstance, NULL);
 
 				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 
@@ -212,8 +216,11 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
-				
+#ifdef WIN3_1
 				oldAddressBarProc = (FARPROC)SetWindowLong(hAddressBar, GWL_WNDPROC, (LONG)MakeProcInstance((FARPROC)AddressBarProc, g_hInstance));
+#else
+				oldAddressBarProc = (WNDPROC)SetWindowLongPtr(hAddressBar, GWLP_WNDPROC, (LONG_PTR)AddressBarProc);
+#endif
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 		case WM_SIZE: {

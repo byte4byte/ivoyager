@@ -10,7 +10,7 @@
 #define WIN3_1
 #endif
 
-#define WIN3_1
+//#define WIN3_1
 
 #ifdef WIN3_1
 #include <string.h>
