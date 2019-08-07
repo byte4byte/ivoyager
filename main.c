@@ -266,6 +266,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	static MSG msg;
 	HWND browserWin;
 	int i = 0;
+	HICON icon = LoadIcon(hInstance, IDI_APPLICATION);
 	
 #ifdef NOTHREADS
 	Task far *currTask;
@@ -291,12 +292,16 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszMenuName = NULL;
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	RegisterClass(&wc);
+	
+#ifndef WIN3_1
+	icon = LoadImage(hInstance, "ivoyager32.ico",  IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+#endif
 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hIcon = NULL;
+	wc.hIcon = icon;
 	wc.hInstance = hInstance;
 	wc.lpfnWndProc = (WNDPROC)BrowserShellProc;
 	wc.lpszClassName = "VOYAGER_SHELL";
