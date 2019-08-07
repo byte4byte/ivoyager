@@ -176,6 +176,26 @@ void  OpenUrl(ContentWindow  far *window, LPSTR  url) {
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
+static FARPROC oldAddressBarProc;
+
+LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
+		case WM_KEYDOWN:
+			if (wParam == VK_RETURN) {
+				LPSTR url;
+				int len = GetWindowTextLength(hWnd);
+				url = (LPSTR)GlobalAlloc(GMEM_FIXED, len+2);
+				url[len] = '\0';
+				GetWindowText(hWnd, url, len+1);
+				OpenUrl(&g_TOP_WINDOW, url);
+				GlobalFree((HGLOBAL)url);
+				return FALSE;
+			}
+			break;
+	}
+	return CallWindowProc(oldAddressBarProc, hWnd, msg, wParam, lParam);
+}
+
 LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = 25;
 
@@ -184,7 +204,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			{
 				RECT rc;
 				GetClientRect(hWnd, &rc);
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, rc.right, fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, rc.right, fontHeight, hWnd, 33, g_hInstance, NULL);
 
 				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 
@@ -192,6 +212,8 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
+				
+				oldAddressBarProc = (FARPROC)SetWindowLong(hAddressBar, GWL_WNDPROC, (LONG)MakeProcInstance((FARPROC)AddressBarProc, g_hInstance));
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 		case WM_SIZE: {
@@ -209,7 +231,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 	}
-	return 0;
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK BrowserProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -233,8 +255,6 @@ DWORD WINAPI workerProc(LPVOID unused) {
 #endif
 
 int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
-	//MessageBox(NULL, "voyager", "", MB_OK);
-
 	static WNDCLASS wc;
 	static MSG msg;
 	HWND browserWin;
@@ -246,14 +266,10 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DWORD threadId;
 #endif
 
-	//static char buff[256];
-	//wsprintf(buff, "%d %d %d %d", sizeof(char *), sizeof(char near *), sizeof(char far *), sizeof(LPARAM));
-	//MessageBox(NULL, buff, "", MB_OK);
-
 	g_hInstance = hInstance;
 
 	_fmemset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
-	//InitTaskSystem();
+	InitTaskSystem();
 
 	#include "tests/path.c"
 
