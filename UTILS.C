@@ -1,21 +1,6 @@
 #ifndef _UTILS_C
 #define _UTILS_C
 
-static void far *GAlloc(int type, int len) {
-	void far *ret = (void far *)LocalAlloc(LMEM_FIXED, len);
-	if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", "", MB_OK);
-	return ret;
-}
-
-static void GFree(void far *ptr) {
-	LocalFree((HLOCAL)ptr);
-}
-
-//#define GlobalAlloc(x, y) GAlloc(x,y)
-//#define LocalFree(x)
-//#define GlobalFree GFree
-//#define GlobalAlloc GAlloc
-
 static char near *FarStrToNear(const char far *str) {
 	char near *l_str = (char near *)LocalAlloc(LMEM_FIXED, lstrlen(str)+1);
 	char near *l_str_beg = l_str;
@@ -66,6 +51,32 @@ static char far *NearStrToFar(const char near *str) {
 }
 
 #ifdef WIN3_1
+
+static void far *GAlloc(int len) {
+	void far *ret = (void far *)GlobalLock(GlobalAlloc(GMEM_FIXED, len));
+	if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", "", MB_OK);
+	return ret;
+}
+
+
+static void *LAlloc(int len) {
+	void *ret = (void *)LocalAlloc(LMEM_FIXED, len);
+	if (! ret) MessageBox(NULL, "LocalAlloc FAILED", "", MB_OK);
+	return ret;
+}
+
+static void GFree(void far *ptr) {
+	GlobalFree(GlobalHandle((UINT)ptr));
+}
+
+static void LFree(void *ptr) {
+	LocalFree((HLOCAL)ptr);
+}
+
+#define GlobalAlloc(x, y) GAlloc(y)
+#define LocalAlloc(x, y) LAlloc(y)
+#define LocalFree(x)
+#define GlobalFree GFree
 
 #include <ctype.h>
 #include <stdio.h>
