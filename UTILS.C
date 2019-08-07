@@ -16,11 +16,11 @@ static void *LAlloc(int len) {
 	return ret;
 }
 
-static void GFree(void far *ptr) {
+static void GFree(HGLOBAL ptr) {
 	GlobalFree(GlobalHandle((UINT)ptr));
 }
 
-static void LFree(void *ptr) {
+static void LFree(HLOCAL ptr) {
 	LocalFree((HLOCAL)ptr);
 }
 
@@ -132,8 +132,8 @@ static FILE *_ffopen(const char far *filename, const char far *mode) {
 	
 	ret = fopen(l_filename, l_mode);
 	
-	LocalFree((HGLOBAL)l_filename);
-	LocalFree((HGLOBAL)l_mode);
+	LocalFree((HLOCAL)l_filename);
+	LocalFree((HLOCAL)l_mode);
 	
 	return ret;
 }

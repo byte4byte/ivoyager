@@ -40,10 +40,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	OPEN_URL_DATA far *open_url_data;
 	BOOL ret = FALSE;
 	LPARAM state;
-	
-	MessageBox(g_TOP_WINDOW.hWnd, "RUN 1", "", MB_OK);
-	
-	
+		
 	#define RUN_TASK_VAR_STATE   0
 	#define RUN_TASK_VAR_DATA  	 1
 	#define RUN_TASK_VAR_CHUNKS  2
@@ -53,9 +50,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	#define RUN_TASK_STATE_PARSE_DOM   2
 	
 	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, &state, NULL);
-	MessageBox(g_TOP_WINDOW.hWnd, "RUN 2", "", MB_OK);
 	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM far *)&open_url_data, NULL);
-	MessageBox(g_TOP_WINDOW.hWnd, "RUN 3", "", MB_OK);
 	switch (state) {
 		case RUN_TASK_STATE_OPEN_STREAM:
 		{
@@ -76,10 +71,8 @@ BOOL  RunOpenUrlTask(Task far *task) {
 						break;
 					}
 					
-					MessageBox(g_TOP_WINDOW.hWnd, "OPENED", "", MB_OK);
-					
 					open_url_data = (OPEN_URL_DATA far *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
-					//memset(open_url_data, 0, sizeof(OPEN_URL_DATA));
+					_fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
 					
 					open_url_data->fp = fp;
 					open_url_data->url_info = url_info;
@@ -96,67 +89,33 @@ BOOL  RunOpenUrlTask(Task far *task) {
 		}
 		case RUN_TASK_STATE_READ_STREAM:
 		{
-			static char buff[256];
 			int addidx;
 			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
-			READ_CHUNK far *read_chunk_far;
-			LPARAM read_chunk_ptr;
-			MessageBox(g_TOP_WINDOW.hWnd, "read", "", MB_OK);
 			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff)-1, open_url_data->fp);
-			MessageBox(g_TOP_WINDOW.hWnd, "read 2", "", MB_OK);
 			if (read_chunk->len <= 0) {
-				MessageBox(g_TOP_WINDOW.hWnd, "read 3", "", MB_OK);
 				LocalFree((HGLOBAL)read_chunk);
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
-				MessageBox(g_TOP_WINDOW.hWnd, "read 4", "", MB_OK);
 			}
 			else {	
-				MessageBox(g_TOP_WINDOW.hWnd, "read 5", "", MB_OK);
-				read_chunk_far = (READ_CHUNK far *)NearPtrToFar((const char near *)read_chunk, sizeof(READ_CHUNK));
-				ParseDOMChunk(&g_TOP_WINDOW, (char far *)read_chunk_far->read_buff, read_chunk_far->len);
-				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk_far);
-				read_chunk_ptr = (LPARAM)read_chunk_far;
-				//if ((READ_CHUNK far *)read_chunk_ptr != read_chunk_far) {
-					
-					wsprintf(buff, "first %lX %lX %d", (READ_CHUNK far *)read_chunk_ptr, (READ_CHUNK far *)read_chunk_far, addidx);
-					MessageBox(NULL, buff, "", MB_OK); // 2 390E
-					//MessageBox(g_TOP_WINDOW.hWnd, "ERROR NO MATCH", "", MB_OK);
-				//}
-				if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
-					MessageBox(NULL, "GET FAILED", "", MB_OK);
-				}
-				if ((READ_CHUNK far *)read_chunk_ptr != read_chunk_far) {
-					
-					wsprintf(buff, "%lX %lX", (READ_CHUNK far *)read_chunk_ptr, (READ_CHUNK far *)read_chunk_far);
-					MessageBox(NULL, buff, "", MB_OK); // 2 390E
-					MessageBox(g_TOP_WINDOW.hWnd, "ERROR NO MATCH", "", MB_OK);
-				}
-				MessageBox(g_TOP_WINDOW.hWnd, "read 5.1", "", MB_OK);
-				LocalFree((HGLOBAL)read_chunk);
-				MessageBox(g_TOP_WINDOW.hWnd, "read 6", "", MB_OK);
+				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 			}
 			//break;
 		}
 		case RUN_TASK_STATE_PARSE_DOM: {
 			LPARAM read_chunk_ptr;
 			READ_CHUNK far *read_chunk;
-			MessageBox(g_TOP_WINDOW.hWnd, "dom", "", MB_OK);
+
 			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
-				MessageBox(g_TOP_WINDOW.hWnd, "dom1", "", MB_OK);
 				ret = TRUE;
 				break;
 			}
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;
 			
-			MessageBox(g_TOP_WINDOW.hWnd, "dom2", "", MB_OK);
 			if (ParseDOMChunk(&g_TOP_WINDOW, (char far *)read_chunk->read_buff, read_chunk->len)) {
-				MessageBox(g_TOP_WINDOW.hWnd, "dom3", "", MB_OK);
-				GlobalFree((HGLOBAL)read_chunk);
+				LocalFree((HLOCAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
-				MessageBox(g_TOP_WINDOW.hWnd, "dom4", "", MB_OK);
 			}
 			
-			MessageBox(g_TOP_WINDOW.hWnd, "dom5", "", MB_OK);
 			break;
 		}
 	}
