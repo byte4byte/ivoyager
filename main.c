@@ -208,7 +208,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			{
 				RECT rc;
 				GetClientRect(hWnd, &rc);
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, rc.right, fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);
 
 				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 
@@ -227,7 +227,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 
-			MoveWindow(hAddressBar, 0, 0, rc.right, fontHeight, TRUE);
+			MoveWindow(hAddressBar, -1, 0, rc.right+2, fontHeight, TRUE);
 			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight, TRUE);
 
 			return 0;
