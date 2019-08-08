@@ -4,6 +4,7 @@
 #include "url.c"
 #include "dom.h"
 #include <stdio.h>
+#include <wing.h>
 
 ContentWindow g_TOP_WINDOW;
 static LPSTR g_szDefURL = "d:/index.htm";
@@ -227,8 +228,8 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 
-			MoveWindow(hAddressBar, -1, 0, rc.right+2, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight, TRUE);
+			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight, TRUE);
 
 			return 0;
 		}
