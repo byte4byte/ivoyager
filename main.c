@@ -4,7 +4,9 @@
 #include "url.c"
 #include "dom.h"
 #include <stdio.h>
+#ifdef WIN3_1
 #include <wing.h>
+#endif
 
 ContentWindow g_TOP_WINDOW;
 static LPSTR g_szDefURL = "d:/index.htm";
@@ -211,13 +213,13 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				GetClientRect(hWnd, &rc);
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);
 
-				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
-#ifdef WIN3_1
+#ifdef WIN3_1a
 				oldAddressBarProc = (FARPROC)SetWindowLong(hAddressBar, GWL_WNDPROC, (LONG)MakeProcInstance((FARPROC)AddressBarProc, g_hInstance));
 #else
 				oldAddressBarProc = (WNDPROC)SetWindowLongPtr(hAddressBar, GWLP_WNDPROC, (LONG_PTR)AddressBarProc);
@@ -275,6 +277,23 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DWORD threadId;
 #endif
 
+#ifndef WIN3_1
+	HMODULE hShCore = LoadLibrary("shcore.dll");
+	if (hShCore) {
+		typedef HRESULT (*lpSetProcessDpiAwareness)(int value);
+		enum PROCESS_DPI_AWARENESS {
+		  PROCESS_DPI_UNAWARE,
+		  PROCESS_SYSTEM_DPI_AWARE,
+		  PROCESS_PER_MONITOR_DPI_AWARE
+		};
+		lpSetProcessDpiAwareness SetProcessDpiAwareness = (lpSetProcessDpiAwareness)GetProcAddress(hShCore, "SetProcessDpiAwareness");
+		if (SetProcessDpiAwareness) {
+			//#define PROCESS_PER_MONITOR_DPI_AWARE 0
+			SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);	
+		}
+	}
+#endif
+
 	g_hInstance = hInstance;
 
 	_fmemset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
@@ -284,7 +303,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = NULL;
 	wc.hInstance = hInstance;
