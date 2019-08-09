@@ -203,13 +203,22 @@ LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return CallWindowProc(oldAddressBarProc, hWnd, msg, wParam, lParam);
 }
 
+#ifndef WIN3_1
+typedef UINT (* lpGetDpiForWindow)(HWND hWnd);
+lpGetDpiForWindow GetDpiForWindow = NULL;
+#endif
+
+#define DEF_FONT_HEIGHT 25
+
 LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	static int fontHeight = 25;
+	static int fontHeight = DEF_FONT_HEIGHT;
+	static HFONT hAddrBarFont = NULL;
 
 	switch (msg) {
 		case WM_CREATE:
 			{
 				RECT rc;
+
 				GetClientRect(hWnd, &rc);
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);
 
@@ -219,15 +228,33 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
-#ifdef WIN3_1a
+#ifdef WIN3_1
 				oldAddressBarProc = (FARPROC)SetWindowLong(hAddressBar, GWL_WNDPROC, (LONG)MakeProcInstance((FARPROC)AddressBarProc, g_hInstance));
 #else
 				oldAddressBarProc = (WNDPROC)SetWindowLongPtr(hAddressBar, GWLP_WNDPROC, (LONG_PTR)AddressBarProc);
 #endif
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
+		case WM_MOVE:
 		case WM_SIZE: {
 			RECT rc;
+#ifndef WIN3_1				
+			if (GetDpiForWindow) {
+				UINT dpi = GetDpiForWindow(hWnd);
+				fontHeight = (int)(((float)dpi / (float)4)); // 1/4 inch
+				if (hAddrBarFont) {
+					DeleteObject(hAddrBarFont);
+				}
+				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
+				hAddrBarFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
+				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
+
+				//GetClientRect(hAddressBar, &rc);
+				fontHeight += 2;
+			}
+#endif			
 			GetClientRect(hWnd, &rc);
 
 			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
@@ -279,6 +306,8 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #ifndef WIN3_1
 	HMODULE hShCore = LoadLibrary("shcore.dll");
+	HMODULE user32dll = GetModuleHandle(TEXT("user32.dll"));
+	GetDpiForWindow = (lpGetDpiForWindow)GetProcAddress(user32dll, "GetDpiForWindow");
 	if (hShCore) {
 		typedef HRESULT (*lpSetProcessDpiAwareness)(int value);
 		enum PROCESS_DPI_AWARENESS {
@@ -303,7 +332,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.hbrBackground =  GetStockObject(WHITE_BRUSH);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = NULL;
 	wc.hInstance = hInstance;
