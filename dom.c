@@ -184,7 +184,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far *buff, in
 					if (*ptr == '>') {
 						state = PARSE_STATE_TAG_START;
 						*ptr = '\0';
-						MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
+						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
+						TagParsed(window, task, lpCurrTagStart);
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						break;
@@ -347,14 +348,24 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far *buff, in
 	}
 	
 	if (! eof) {
-		if (lpCurrTagStart) {
-			ConcatVar(task, PARSE_DOM_CURR_TAG, lpCurrTagStart);
-		}
-		if (lpCurrAttribStart) {
-			ConcatVar(task, PARSE_DOM_CURR_ATTRIB, lpCurrAttribStart);
-		}
-		if (lpCurrValueStart) {
-			ConcatVar(task, PARSE_DOM_CURR_VALUE, lpCurrValueStart);
+		switch (state) {
+			case PARSE_STATE_TAG_TAGNAME:
+				if (lpCurrTagStart) {
+					ConcatVar(task, PARSE_DOM_CURR_TAG, lpCurrTagStart);
+				}
+				break;
+			case PARSE_STATE_ATTRIB_NAME:
+				if (lpCurrAttribStart) {
+					ConcatVar(task, PARSE_DOM_CURR_ATTRIB, lpCurrAttribStart);
+				}
+				break;
+			case PARSE_STATE_ATTRIB_VALUE_SGLQOUTE:
+			case PARSE_STATE_ATTRIB_VALUE_DBLQOUTE:
+			case PARSE_STATE_ATTRIB_VALUE:
+				if (lpCurrValueStart) {
+					ConcatVar(task, PARSE_DOM_CURR_VALUE, lpCurrValueStart);
+				}
+				break;
 		}
 	}
 	
