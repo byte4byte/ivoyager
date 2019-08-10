@@ -37,6 +37,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	typedef struct {
 		char read_buff[128];
 		int len;
+		BOOL eof;
 	} READ_CHUNK;
 	
 	
@@ -95,6 +96,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 			int addidx;
 			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
 			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff)-1, open_url_data->fp);
+			read_chunk->eof = feof(open_url_data->fp);
 			if (read_chunk->len <= 0) {
 				LocalFree((HGLOBAL)read_chunk);
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
@@ -114,7 +116,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 			}
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;
 			
-			if (ParseDOMChunk(&g_TOP_WINDOW, (char far *)read_chunk->read_buff, read_chunk->len)) {
+			if (ParseDOMChunk(&g_TOP_WINDOW, task, (char far *)read_chunk->read_buff, read_chunk->len, read_chunk->eof)) {
 				LocalFree((HLOCAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
 			}
@@ -317,8 +319,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		};
 		lpSetProcessDpiAwareness SetProcessDpiAwareness = (lpSetProcessDpiAwareness)GetProcAddress(hShCore, "SetProcessDpiAwareness");
 		if (SetProcessDpiAwareness) {
-			//#define PROCESS_PER_MONITOR_DPI_AWARE 0
-			SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);	
+			SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);	
 		}
 	}
 #endif

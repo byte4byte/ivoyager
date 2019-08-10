@@ -1,6 +1,8 @@
 #ifndef _DOM_H
 #define _DOM_H
 
+#include "task.h"
+
 typedef int CSSPropType;
 typedef int CSSUnit;
 
@@ -71,21 +73,37 @@ typedef struct ContentWindow ContentWindow;
 typedef struct ContentWindow {
 	HWND hWnd;
 	RECT rcClient;
-	DomNode *rootNode;
+	DomNode far *document;
 	ContentWindow *parent;
 	// Parsed CSS
 } ContentWindow;
 
+typedef struct NodeList {
+	
+} NodeList;
+
 typedef struct DomNode {
 	LPSTR szTagName;
 	int type;
-	ContentWindow contentWindow;
+	ContentWindow far *contentWindow;
 	AllCSSProps computedCSS;
-	DomNode *parent;
-	DomNode *firstChild;
-	DomNode *next;
+	int childElementCount; //childElementCount: 2
+	NodeList far *children; //children: HTMLCollection(2)
+	NodeList far *childNodes; //childNodes: NodeList(3) [head, text, body]
+	DomNode far *firstChild; //firstChild: head
+	DomNode far *firstElementChild; //firstElementChild: head
+	DomNode far *nextElementSibling; //nextElementSibling: null
+	DomNode far *nextSibling; //nextSibling: null
+	int nodeType; //nodeType: 1
+	DomNode far *parentNode; //parentNode: document
+	DomNode far *parentElement; //parentElement: null
+	DomNode far *previousElementSibling; //previousElementSibling: null
+	DomNode far *previousSibling; //previousSibling: null
+	LPSTR tagName; 
+	//calc on read: innerHTML: "<head><title>blah</title></head>↵<body bgcolor="#000000">↵<b><i>hi</i></b>↵<script>↵sdsd();↵alert("blah");↵</script>↵<script>↵console.log(document.childNodes);↵</script>↵</body>"
+	//calc on read: innerText: "hi"
 } DomNode;
 
-BOOL  ParseDOMChunk(ContentWindow far *window, char far *buff, int len);
+BOOL  ParseDOMChunk(ContentWindow far *window, Task far *task, char far *buff, int len, BOOL end);
 
 #endif

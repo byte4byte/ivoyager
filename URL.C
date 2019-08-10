@@ -20,7 +20,7 @@ static BOOL  IsAbsolutePath(LPSTR  url) {
 // TODO: Wide chars & symlink support
 static LPSTR  NormalizePath(LPSTR  path) {
     LPSTR ret = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+3);
-    	LPSTR ptr = ret, curr_dir_ptr = NULL, prev_dir_ptr = NULL;
+    LPSTR ptr = ret, curr_dir_ptr = NULL, prev_dir_ptr = NULL;
 	lstrcpy(ret, path);
 	
 	//return ret;
