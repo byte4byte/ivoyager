@@ -23,6 +23,8 @@
 #define PARSE_DOM_CURR_VALUE   					104
 #define PARSE_DOM_CURR_PARSED_TAG				105
 #define PARSE_DOM_PROBE_END						106
+#define PARSE_DOM_IN_COMMENT					107
+#define PARSE_DOM_IN_COMMENT_CNT				108
 
 #define PARSE_CSS_VAR_STATE   					200
 #define PARSE_CSS_IN_SQUOTE						201
@@ -685,6 +687,8 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state) {
 BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL eof) {
 	DomNode far *currNode;
 	LPARAM state;
+	LPARAM bInComment = FALSE;
+	LPARAM bInCommentCnt = 0; // 3 == in comment
 	LPSTR currText = NULL;
 	LPSTR currTag = NULL;
 	LPSTR currAttrib = NULL;
@@ -704,6 +708,9 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	
 	GetCustomTaskVar(task, PARSE_DOM_VAR_STATE, &state, NULL);
 	GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);
+	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT, &bInComment, NULL);
+	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, &bInCommentCnt, NULL);
+	
 	switch (state) {
 		case PARSE_STATE_TAG_TAGNAME:
 			lpCurrTagStart = *buff;
@@ -719,6 +726,31 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	}
 	
 	for (;;) {
+		
+		if (bInComment) {
+			while (ptr < end) {
+				if (bInCommentCnt == 3 && *ptr == '-') {
+					bInCommentCnt--;
+				}
+				else if (bInCommentCnt == 2 && *ptr == '-') {
+					bInCommentCnt--;
+				}
+				else if (bInCommentCnt == 1 && *ptr == '>') {
+					bInComment = FALSE;
+					bInCommentCnt = 0;
+					ptr++;
+					last_node_ptr = ptr;
+					break;
+				}
+				else {
+					bInCommentCnt = 3;
+				}
+				ptr++;
+			}
+		}
+		
+		if (bInComment) break;
+		
 		switch (state) {
 			case PARSE_STATE_TAG_NEW_TAG:
 				currNode = (DomNode far *)GlobalAlloc(GMEM_FIXED, sizeof(DomNode));
@@ -767,8 +799,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					}					
 					state = PARSE_STATE_TAG_TAGNAME;
 					AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
-					ptr++;
-					lpCurrTagStart = ptr;
+					//ptr++;
+					lpCurrTagStart = ptr+1;
 					break;
 				}
 				else if (currText) {
@@ -778,9 +810,23 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 				break;
 			case PARSE_STATE_TAG_TAGNAME:
 				while (ptr < end) {
-					if (*ptr == '>') {
+					if (bInCommentCnt == 0 &&  *ptr == '!') {
+						bInCommentCnt=1;
+					}
+					else if (bInCommentCnt == 1 && *ptr == '-') {
+						bInCommentCnt=2;
+					}
+					else if (bInCommentCnt == 2 && *ptr == '-') { // in a comment
+						bInCommentCnt=3;
+						bInComment = TRUE;
+						state = PARSE_STATE_TAG_START;
+						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
+						break;
+					}
+					else if (*ptr == '>') {
 						state = PARSE_STATE_TAG_START;
 						*ptr = '\0';
+						bInCommentCnt = 0;
 						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
 						TagParsed(window, task, lpCurrTagStart);
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
@@ -790,11 +836,15 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					}
 					else if (isspace(*ptr)) {
 						*ptr = '\0';
+						bInCommentCnt = 0;
 						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
 						TagParsed(window, task, lpCurrTagStart);
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						break;
+					}
+					else {
+						bInCommentCnt = -1;
 					}
 					ptr++;
 				}
@@ -973,6 +1023,9 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 				break;
 		}
 	}
+	
+	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT, (LPARAM)bInComment);
+	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, bInCommentCnt);
 	
 	if (eof) {
 		LPSTR prevtag;
