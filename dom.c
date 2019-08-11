@@ -764,7 +764,10 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 				ParseCSSChunk(window, task, &state, NULL, &ptr, len-(ptr-*buff), eof);
 				last_node_ptr = ptr;
 				break;
-			case PARSE_STATE_TAG_START:				
+			case PARSE_STATE_TAG_START:
+			
+				bInCommentCnt = 0;
+			
 				while (ptr < end) {
 					if (*ptr == '<') {
 						break;
@@ -826,7 +829,6 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					else if (*ptr == '>') {
 						state = PARSE_STATE_TAG_START;
 						*ptr = '\0';
-						bInCommentCnt = 0;
 						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
 						TagParsed(window, task, lpCurrTagStart);
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
@@ -836,7 +838,6 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					}
 					else if (isspace(*ptr)) {
 						*ptr = '\0';
-						bInCommentCnt = 0;
 						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
 						TagParsed(window, task, lpCurrTagStart);
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
