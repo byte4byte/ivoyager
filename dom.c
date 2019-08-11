@@ -249,7 +249,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 			}
 		}
 		
-		if (bInComment && ! state != PARSE_CSS_STATE_IN_MAYBEDONE) break;
+		if (bInComment && state != PARSE_CSS_STATE_IN_MAYBEDONE) break;
 		
 		switch (state) {
 			case PARSE_CSS_STATE_FIND_SELECTOR:
