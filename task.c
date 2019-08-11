@@ -65,6 +65,7 @@ BOOL FreeTempTask(Task far *task) {
 	DeleteCriticalSection(&task->cs);
 #endif
 	GlobalFree((HGLOBAL)task);
+	return TRUE;
 }
 
 BOOL  AddTask(Task far *task) {

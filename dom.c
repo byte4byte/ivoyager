@@ -58,8 +58,8 @@ BOOL CompileJSChunk(ContentWindow far *window, Task far *task, LPARAM *state, Do
 }
 
 BOOL CSSEnd(ContentWindow far *window, Task far *task, LPARAM far *state) {
-	AddCustomTaskVar(task, PARSE_CSS_RESTORE_STATE, *state);
 	Task far *findEndTask = AllocTempTask();
+	AddCustomTaskVar(task, PARSE_CSS_RESTORE_STATE, *state);
 	*state = PARSE_CSS_STATE_IN_MAYBEDONE;
 	AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, *state);
 	AddCustomTaskVar(task, PARSE_CSS_FIND_END_TASK, (LPARAM)findEndTask);
