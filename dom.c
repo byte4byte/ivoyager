@@ -251,6 +251,13 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 		
 		if (bInComment) {
 			while (ptr < end) {
+				
+				if (*ptr == '<') {
+					CSSEnd(window, task, &state);
+					bNoInc = TRUE;
+					break;
+				}
+				
 				if (*ptr == '*') {
 					bLastStar = TRUE;
 				}
@@ -267,7 +274,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 			}
 		}
 		
-		if (bInComment) break;
+		if (bInComment && ! state != PARSE_CSS_STATE_IN_MAYBEDONE) break;
 		
 		switch (state) {
 			case PARSE_CSS_STATE_FIND_SELECTOR:
@@ -486,6 +493,11 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 				break;
 			case PARSE_CSS_STATE_IN_VALUE:
 				while (ptr < end) {
+					if (*ptr == '<') {
+						CSSEnd(window, task, &state);
+						bNoInc = TRUE;
+						break;
+					}
 					if (bInSQuote) {
 						if (*ptr == '\'' || *ptr == '\n') {
 							bInSQuote = FALSE;
