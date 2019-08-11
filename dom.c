@@ -128,7 +128,7 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
-		MessageBox(window->hWnd, fullptr, "CSS Selector", MB_OK);
+		MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Selector", MB_OK);
 	}
 	else {
 		*state = PARSE_CSS_STATE_FIND_SELECTOR;
@@ -152,7 +152,7 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
-		MessageBox(window->hWnd, fullptr, "CSSValue", MB_OK);
+		MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSSValue", MB_OK);
 	}
 	
 	GlobalFree((HGLOBAL)fullptr);
@@ -172,7 +172,7 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {	
-		MessageBox(window->hWnd, fullptr, "CSS Property", MB_OK);
+		MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Property", MB_OK);
 	}
 	
 	GlobalFree((HGLOBAL)fullptr);

@@ -74,6 +74,28 @@ static BOOL IsWhitespace(LPSTR str) {
 	return TRUE;
 }
 
+static LPSTR Trim(LPSTR str, BOOL left, BOOL right) {
+	LPSTR ptr = str;
+	if (left) {
+		while (*ptr) {
+			if (! isspace(*ptr)) break;
+			ptr++;
+		}
+		if (ptr != str) lstrcpy(str, ptr);
+		ptr = str;
+	}
+	if (right) {
+		LPSTR lastChar = NULL;
+		while (*ptr) {
+			if (! isspace(*ptr)) lastChar = ptr+1;
+			ptr++;
+		}
+		if (lastChar) lstrcpy(lastChar, "");
+	}
+	
+	return str;
+}
+
 static char near *FarStrToNear(const char far *str) {
 	char near *l_str = (char near *)LocalAlloc(LMEM_FIXED, lstrlen(str)+1);
 	char near *l_str_beg = l_str;
