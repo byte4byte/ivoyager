@@ -79,7 +79,7 @@ typedef struct ContentWindow {
 } ContentWindow;
 
 typedef struct NodeList {
-	
+ DomNode *node;
 } NodeList;
 
 typedef struct DomNode {
@@ -104,6 +104,6 @@ typedef struct DomNode {
 	//calc on read: innerText: "hi"
 } DomNode;
 
-BOOL  ParseDOMChunk(ContentWindow far *window, Task far *task, char far *buff, int len, BOOL end);
+BOOL  ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL end);
 
 #endif

@@ -12,6 +12,8 @@ typedef struct TaskDataList {
 #define TASK_DATA_VAR	0
 #define TASK_DATA_LIST	1
 
+#define TASK_COMPLETE	100000
+
 typedef struct TaskData TaskData;
 typedef struct TaskData { // important "data" and "next" come first as list allocates TaskDataList to save memory
 	LPARAM data; // if type == TASK_DATA_LIST data is a ptr to TaskDataList

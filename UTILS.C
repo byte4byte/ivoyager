@@ -1,6 +1,8 @@
 #ifndef _UTILS_C
 #define _UTILS_C
 
+#include <ctype.h>
+
 #ifdef WIN3_1
 
 static void far *GAlloc(int len) {
@@ -29,7 +31,48 @@ static void LFree(HLOCAL ptr) {
 #define LocalFree(x) LFree(x)
 #define GlobalFree(x) GFree(x)
 
+#else
+	
+#define _fstricmp _stricmp
+#define _fmemmove memmove
+#define _fmemset memset
+#define _fstrchr strchr
+#define _ffopen fopen
+#define _fstrncpy strncpy
+#define _fstrcat strcat
+
 #endif
+
+static LPSTR ConcatVar(Task far *task, DWORD id, LPSTR str) {
+	LPSTR prev_str;
+	LPSTR new_str;
+	GetCustomTaskVar(task, id, (LPARAM far *)&prev_str, NULL);
+	if (prev_str) {
+		int len = lstrlen(prev_str);
+		len += lstrlen(str);
+		new_str = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
+		lstrcpy(new_str, prev_str);
+		_fstrcat(new_str, str);
+		AddCustomTaskVar(task, id, (LPARAM)new_str);
+		GlobalFree((HGLOBAL)prev_str);
+	}
+	else {
+		int len = lstrlen(str);
+		new_str = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
+		lstrcpy(new_str, str);
+		AddCustomTaskVar(task, id, (LPARAM)new_str);
+	}
+	return new_str;
+}
+
+static BOOL IsWhitespace(LPSTR str) {
+	while (*str) {
+		if (! isspace(*str)) return FALSE;
+		str++;
+	}
+	
+	return TRUE;
+}
 
 static char near *FarStrToNear(const char far *str) {
 	char near *l_str = (char near *)LocalAlloc(LMEM_FIXED, lstrlen(str)+1);
@@ -138,14 +181,8 @@ static FILE *_ffopen(const char far *filename, const char far *mode) {
 	return ret;
 }
 
-#else
-	
-#define _fstricmp _stricmp
-#define _fmemmove memmove
-#define _fmemset memset
-#define _fstrchr strchr
-#define _ffopen fopen
 
 #endif
+
 
 #endif

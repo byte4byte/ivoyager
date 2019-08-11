@@ -26,7 +26,7 @@ typedef struct ParseCSSTaskParams {
 	int len;
 } ParseCSSTaskParams;
 
-#define TASK_LOADURL 0
+#define TASK_LOADURL 1
 
 BOOL  RunOpenUrlTask(Task far *task) {
 	typedef struct {
@@ -35,7 +35,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[128];
+		char read_buff[160];
 		int len;
 		BOOL eof;
 	} READ_CHUNK;
@@ -109,14 +109,16 @@ BOOL  RunOpenUrlTask(Task far *task) {
 		case RUN_TASK_STATE_PARSE_DOM: {
 			LPARAM read_chunk_ptr;
 			READ_CHUNK far *read_chunk;
+			char far *ptr;
 
 			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
 				ret = TRUE;
 				break;
 			}
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;
+			ptr = read_chunk->read_buff;
 			
-			if (ParseDOMChunk(&g_TOP_WINDOW, task, (char far *)read_chunk->read_buff, read_chunk->len, read_chunk->eof)) {
+			if (ParseDOMChunk(&g_TOP_WINDOW, task, (char far **)&ptr, read_chunk->len, read_chunk->eof)) {
 				LocalFree((HLOCAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
 			}
