@@ -35,7 +35,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[160];
+		char read_buff[256];
 		int len;
 		BOOL eof;
 	} READ_CHUNK;
