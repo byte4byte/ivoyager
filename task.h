@@ -48,6 +48,9 @@ BOOL  GetNextTask(Task far **task);
 BOOL  AddTask(Task far *task);
 BOOL  RemoveTask(Task far *task);
 
+Task far *AllocTempTask();
+BOOL FreeTempTask(Task far *task);
+
 BOOL  RemoveAllCustomTaskData(Task far *task);
 
 // arraylist var functions

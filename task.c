@@ -48,6 +48,25 @@ BOOL  RemoveTask(Task  far *task) {
 	return FALSE;
 }
 
+Task far *AllocTempTask() {
+	Task far *task = (Task far *)GlobalAlloc(GMEM_FIXED, sizeof(Task));
+	_fmemset(task, 0, sizeof(Task));
+
+	#ifndef NOTHREADS
+	InitializeCriticalSection(&task->cs);
+	#endif
+	
+	return task;
+}
+
+BOOL FreeTempTask(Task far *task) {
+	RemoveAllCustomTaskData(task);
+#ifndef NOTHREADS
+	DeleteCriticalSection(&task->cs);
+#endif
+	GlobalFree((HGLOBAL)task);
+}
+
 BOOL  AddTask(Task far *task) {
 	TaskQueue far *curr;
 
