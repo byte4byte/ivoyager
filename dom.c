@@ -320,8 +320,10 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					}
 					else if (*ptr == '@') {
 						state = PARSE_CSS_STATE_IN_UNKNOWN_BLOCK;
+						//MessageBox(window->hWnd, "block found", "", MB_OK);
 						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 						blockType = ptr+1;
+						break;
 					}
 					else if (*ptr == '}') {
 						// todo close block
@@ -545,6 +547,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					}
 					else if (*ptr == '}') {
 						state = PARSE_CSS_STATE_FIND_SELECTOR;
+						MessageBox(window->hWnd, "closed bracket", "", MB_OK);
 						//*ptr = '\0';
 						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
 						//SelectorParsed(window, task, lpCurrSelectorStart);
