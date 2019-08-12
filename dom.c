@@ -25,7 +25,8 @@
 #define PARSE_DOM_PROBE_END						106
 #define PARSE_DOM_IN_COMMENT					107
 #define PARSE_DOM_IN_COMMENT_CNT				108
-#define LAST_WAS_HTML_OPEN						109
+#define PARSE_DOM_LAST_WAS_HTML_OPEN			109
+#define PARSE_DOM_LAST_SLASH					110
 
 #define PARSE_CSS_VAR_STATE   					200
 #define PARSE_CSS_IN_SQUOTE						201
@@ -44,15 +45,16 @@
 #define PARSE_CSS_BLOCK_PARAMS					215
 #define PARSE_CSS_BLOCKTYPE						216
 #define PARSE_CSS_FOUND_SLASH					217
-#define PARSE_CSS_STATE_FIND_SELECTOR			0 // parse until !isspace
+
+#define PARSE_CSS_STATE_FIND_SELECTOR			0
 #define PARSE_CSS_STATE_FIND_NEXT_SELECTOR		1
-#define PARSE_CSS_STATE_IN_SELECTOR				2 // parse until , {
-#define PARSE_CSS_STATE_FIND_BLOCK				3 // parse until {
-#define PARSE_CSS_STATE_FIND_PROP				4// parse until !isspace
-#define PARSE_CSS_STATE_IN_PROP					5 // parse until isspace }
-#define PARSE_CSS_STATE_FIND_COLON				6 // parse until : }
-#define PARSE_CSS_STATE_FIND_VALUE				7 // parse until !isspace }
-#define PARSE_CSS_STATE_IN_VALUE				8 // (if inquote parse until '") ; }
+#define PARSE_CSS_STATE_IN_SELECTOR				2
+#define PARSE_CSS_STATE_FIND_BLOCK				3
+#define PARSE_CSS_STATE_FIND_PROP				4
+#define PARSE_CSS_STATE_IN_PROP					5
+#define PARSE_CSS_STATE_FIND_COLON				6
+#define PARSE_CSS_STATE_FIND_VALUE				7
+#define PARSE_CSS_STATE_IN_VALUE				8
 #define PARSE_CSS_STATE_IN_MAYBEDONE			9
 #define PARSE_CSS_STATE_FIND_NEXT_BLOCK_PARAMS	10
 #define PARSE_CSS_STATE_IN_BLOCK_PARAMS			11
@@ -977,7 +979,7 @@ BOOL TextParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	return TRUE;
 }
 
-BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state) {
+BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM autoclose) {
 	LPSTR tag;
 	BOOL ret = TRUE;
 	LPARAM bFindCssEnd = FALSE;
@@ -999,6 +1001,9 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state) {
 		return FALSE;
 	}
 	if (tag) {
+		
+		if (autoclose) MessageBox(window->hWnd, "autoclose", "", MB_OK);
+		
 		if (! _fstricmp(tag, "style")) {
 			*state = PARSE_STATE_CSS_CODE;
 			AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
@@ -1022,6 +1027,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	LPSTR currAttrib = NULL;
 	LPSTR currValue = NULL;
 	BOOL brk = FALSE;
+	LPARAM last_slash = FALSE;
 	
 	LPSTR lpCurrTagStart = NULL;
 	LPSTR lpCurrAttribStart = NULL;
@@ -1038,7 +1044,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);
 	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT, &bInComment, NULL);
 	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, &bInCommentCnt, NULL);
-	GetCustomTaskVar(task, LAST_WAS_HTML_OPEN, &bLastWasOpen, NULL);
+	GetCustomTaskVar(task, PARSE_DOM_LAST_WAS_HTML_OPEN, &bLastWasOpen, NULL);
+	GetCustomTaskVar(task, PARSE_DOM_LAST_SLASH, &last_slash, NULL);
 	
 	switch (state) {
 		case PARSE_STATE_TAG_TAGNAME:
@@ -1181,8 +1188,14 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						*ptr = chRestore;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
-						if (! TagDone(window, task, &state)) { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash)) { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (bInCommentCnt != 0 && *ptr == '/') {
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (isspace(*ptr)) {
 						char chRestore = *ptr;
@@ -1207,13 +1220,20 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						lpCurrTagStart = lpCurrValueStart = lpCurrAttribStart = NULL;
-						if (! TagDone(window, task, &state)) { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash)) { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (*ptr == '/') { // might be autoclose (useful in xhtml)
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (! isspace(*ptr)) {
 						state = PARSE_STATE_ATTRIB_NAME;
 						lpCurrAttribStart = ptr;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
+						last_slash = FALSE;
 						break;
 					}
 					ptr++;
@@ -1222,12 +1242,20 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			case PARSE_STATE_ATTRIB_NAME:
 				while (ptr < end) {
 					if (*ptr == '>') {
+						*ptr = '\0';
+						if (lstrlen(lpCurrAttribStart)) AttribNameParsed(window, task, lpCurrAttribStart);
 						state = PARSE_STATE_TAG_START;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						lpCurrTagStart = lpCurrValueStart = lpCurrAttribStart = NULL;
-						if (! TagDone(window, task, &state)) { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash)) { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (*ptr == '/') { // might be autoclose (useful in xhtml)
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (*ptr == '=') {
 						*ptr = '\0';
@@ -1235,6 +1263,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						AttribNameParsed(window, task, lpCurrAttribStart);
 						state = PARSE_STATE_ATTRIB_FIND_VALUE;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
+						last_slash = FALSE;
 						break;
 					}
 					else if (isspace(*ptr)) {
@@ -1255,8 +1284,14 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						lpCurrTagStart = lpCurrValueStart = lpCurrAttribStart = NULL;
-						if (! TagDone(window, task, &state)) { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash)) { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (*ptr == '/') { // might be autoclose (useful in xhtml)
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (*ptr == '=') {
 						*ptr = '\0';
@@ -1264,6 +1299,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						AttribNameParsed(window, task, lpCurrAttribStart);
 						state = PARSE_STATE_ATTRIB_FIND_VALUE;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
+						last_slash = FALSE;
 						break;
 					}
 					ptr++;
@@ -1276,8 +1312,14 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						lpCurrTagStart = lpCurrValueStart = lpCurrAttribStart = NULL;
-						if (! TagDone(window, task, &state)) { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash)) { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (*ptr == '/') { // might be autoclose (useful in xhtml)
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (! isspace(*ptr)) {
 						if (*ptr == '"') {
@@ -1292,6 +1334,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 							state = PARSE_STATE_ATTRIB_VALUE;
 							lpCurrValueStart = ptr;
 						}
+						
+						last_slash  = FALSE;
 
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						break;
@@ -1303,12 +1347,21 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			case PARSE_STATE_ATTRIB_VALUE:
 				while (ptr < end) {
 					if (*ptr == '>') {
+						*ptr = '\0';
+						//MessageBox(window->hWnd, lpCurrValueStart, "attrib value", MB_OK);
+						AttribValueParsed(window, task, lpCurrValueStart);
 						state = PARSE_STATE_TAG_START;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						last_node_ptr = ptr+1;
 						lpCurrTagStart = lpCurrValueStart = lpCurrAttribStart = NULL;
-						if (! TagDone(window, task, &state))  { ptr++; brk = TRUE; eof = TRUE; }
+						if (! TagDone(window, task, &state, last_slash))  { ptr++; brk = TRUE; eof = TRUE; }
+						last_slash = FALSE;
 						break;
+					}
+					else if (*ptr == '/') { // might be autoclose (useful in xhtml)
+						last_slash = TRUE;
+						lstrcpy(ptr, ptr+1);
+						continue;
 					}
 					else if (isspace(*ptr)) {
 						*ptr = '\0';
@@ -1317,6 +1370,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						lpCurrValueStart = lpCurrAttribStart = NULL;
+						noInc = TRUE;
 						break;
 					}
 					ptr++;
@@ -1393,7 +1447,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	
 	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT, (LPARAM)bInComment);
 	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, bInCommentCnt);
-	AddCustomTaskVar(task, LAST_WAS_HTML_OPEN, bLastWasOpen);
+	AddCustomTaskVar(task, PARSE_DOM_LAST_WAS_HTML_OPEN, bLastWasOpen);
+	AddCustomTaskVar(task, PARSE_DOM_LAST_SLASH, last_slash);
 	
 	if (eof) {
 		LPSTR prevtag;
