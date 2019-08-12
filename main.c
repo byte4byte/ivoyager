@@ -35,7 +35,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[256];
+		char read_buff[2];  // min 2
 		int len;
 		BOOL eof;
 	} READ_CHUNK;
@@ -346,7 +346,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	RegisterClass(&wc);
 	
 #ifndef WIN3_1
-	icon = LoadImage(hInstance, "ivoyager32.ico",  IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+	icon = LoadImage(hInstance, "ivoyager32.ico",  IMAGE_ICON, 64, 64, LR_LOADFROMFILE);
 #endif
 
 	wc.cbClsExtra = 0;

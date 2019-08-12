@@ -25,6 +25,7 @@
 #define PARSE_DOM_PROBE_END						106
 #define PARSE_DOM_IN_COMMENT					107
 #define PARSE_DOM_IN_COMMENT_CNT				108
+#define LAST_WAS_HTML_OPEN						109
 
 #define PARSE_CSS_VAR_STATE   					200
 #define PARSE_CSS_IN_SQUOTE						201
@@ -84,6 +85,7 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 				inStar = FALSE;
 				*bInComment = FALSE;
 				lstrcpy(comment_start, ptr+1);
+				ptr = comment_start;
 				comment_start = NULL;
 			}
 			else {
@@ -224,7 +226,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	for (;;) {
 		BOOL bNoInc = FALSE;
 		
-		if (bInComment) {
+		if (bInComment && state != PARSE_CSS_STATE_IN_MAYBEDONE) {
 			while (ptr < end) {
 				
 				if (*ptr == '<') {
@@ -299,17 +301,24 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 				while (ptr < end) {
 					if (*ptr == '<') {
 						CSSEnd(window, task, &state);
+						*ptr = '\0';
+						ConcatVar(task, PARSE_CSS_CURR_SELECTOR, lpCurrSelectorStart);
+						*ptr = '<';
 						bNoInc = TRUE;
 						break;
 					}
 					if (bInSQuote) {
 						if (*ptr == '\'' || *ptr == '\n') {
 							bInSQuote = FALSE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 					}
 					else if (bInDQuote) {
 						if (*ptr == '\"' || *ptr == '\n') {
 							bInDQuote = FALSE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 					}
 					else if (*ptr == '<') {
@@ -320,9 +329,13 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					else {
 						if (*ptr == '\'') {
 							bInSQuote = TRUE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 						else if (*ptr == '\"') {
 							bInDQuote = TRUE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 						else if (*ptr == ',') {
 							state = PARSE_CSS_STATE_FIND_NEXT_SELECTOR;
@@ -336,7 +349,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 						else if (*ptr == '{') {
 							state = PARSE_CSS_STATE_FIND_PROP;
 							*ptr = '\0';
-							//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
+							//MessageBox(window->hWnd, lpCurrSelectorStart, "tag name", MB_OK);
 							SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state);
 							AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 							break;
@@ -376,6 +389,9 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					if (*ptr == '<') {
 						CSSEnd(window, task, &state);
 						bNoInc = TRUE;
+						*ptr = '\0';
+						ConcatVar(task, PARSE_CSS_CURR_PROP, lpCurrPropStart);
+						*ptr = '<';
 						break;
 					}
 					else if (*ptr == '}') {
@@ -476,16 +492,23 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					if (*ptr == '<') {
 						CSSEnd(window, task, &state);
 						bNoInc = TRUE;
+						*ptr = '\0';
+						ConcatVar(task, PARSE_CSS_CURR_VALUE, lpCurrValueStart);
+						*ptr = '<';
 						break;
 					}
 					if (bInSQuote) {
 						if (*ptr == '\'' || *ptr == '\n') {
 							bInSQuote = FALSE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 					}
 					else if (bInDQuote) {
 						if (*ptr == '\"' || *ptr == '\n') {
 							bInDQuote = FALSE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 					}
 					else if (*ptr == '<') {
@@ -496,9 +519,13 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					else {
 						if (*ptr == '\'') {
 							bInSQuote = TRUE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 						else if (*ptr == '\"') {
 							bInDQuote = TRUE;
+							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
+							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
 						else if (*ptr == ';' || *ptr == '\n') {
 							state = PARSE_CSS_STATE_FIND_PROP;
@@ -523,21 +550,67 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 				break;
 			case PARSE_CSS_STATE_IN_MAYBEDONE: {
 				Task far *findEndTask;
+				char far *start_ptr;
 				LPARAM bTaskComplete = FALSE;
 				LPARAM bFoundEnd = FALSE;
+				LPARAM prev_state;
+				char chRestore;
+				
+				GetCustomTaskVar(task, PARSE_CSS_RESTORE_STATE, &prev_state, NULL);
+				//MessageBox(window->hWnd, ConcatVar(task, PARSE_CSS_CURR_SELECTOR, ""), "sel", MB_OK);
 				GetCustomTaskVar(task, PARSE_CSS_FIND_END_TASK, (LPARAM far *)&findEndTask, NULL);\
 				//MessageBox(window->hWnd, ptr, "FIND END CSS", MB_OK);
+				start_ptr = ptr;
 				ParseDOMChunk(window, findEndTask, &ptr, len-(ptr-*buff), eof);
+				
+				lpCurrSelectorStart = NULL;
+				lpCurrValueStart = NULL;
+				lpCurrValueStart = NULL;
+				
+				
+
 				GetCustomTaskVar(findEndTask, TASK_COMPLETE, (LPARAM far *)&bTaskComplete, NULL);
 				GetCustomTaskVar(findEndTask, PARSE_CSS_FOUND_END_TASK, (LPARAM far *)&bFoundEnd, NULL);
 				if (eof || bTaskComplete) {
+					
+					
+					
 					if (bFoundEnd) {
 						bDone = TRUE;
 						//MessageBox(window->hWnd, ptr, "found end", MB_OK);
 					}
 					else {
-						//MessageBox(window->hWnd, ptr, "NO found end", MB_OK);
-						//state = PARSE_CSS_STATE_FIND_SELECTOR;
+						
+						BOOL bPast = ptr>=end;
+						
+						if (bPast) ptr--;
+						chRestore = *ptr;
+						*ptr = '\0';
+						switch (prev_state) {
+							case PARSE_CSS_STATE_IN_SELECTOR:
+							//MessageBox(window->hWnd, start_ptr, "add 1", MB_OK);
+								ConcatVar(task, PARSE_CSS_CURR_SELECTOR, start_ptr);
+								lpCurrSelectorStart = ptr;
+								GetCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, &bInSQuote, NULL);
+								GetCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, &bInDQuote, NULL);
+								break;
+							case PARSE_CSS_STATE_IN_PROP:
+								ConcatVar(task, PARSE_CSS_CURR_PROP, start_ptr);
+								lpCurrPropStart = ptr;
+								break;
+							case PARSE_CSS_STATE_IN_VALUE:
+								ConcatVar(task, PARSE_CSS_CURR_VALUE, start_ptr);
+								lpCurrValueStart = ptr;
+								GetCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, &bInSQuote, NULL);
+								GetCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, &bInDQuote, NULL);
+								break;
+						}
+						*ptr = chRestore;
+						
+						if (bPast) ptr++;
+						
+						//MessageBox(window->hWnd, ptr, "cont", MB_OK);
+						
 						GetCustomTaskVar(task, PARSE_CSS_RESTORE_STATE, &state, NULL);
 						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 						bNoInc = TRUE;
@@ -545,7 +618,30 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					FreeTempTask(findEndTask);
 				}
 				else {
-					//MessageBox(window->hWnd, ptr, "NOT FOUND", MB_OK);
+					BOOL bPast = ptr>=end;
+						
+					if (bPast) ptr--;
+					chRestore = *ptr;
+					*ptr = '\0';
+					switch (prev_state) {
+						case PARSE_CSS_STATE_IN_SELECTOR:
+						//MessageBox(window->hWnd, start_ptr, "add 2", MB_OK);
+							ConcatVar(task, PARSE_CSS_CURR_SELECTOR, start_ptr);
+							lpCurrSelectorStart = NULL;
+							break;
+						case PARSE_CSS_STATE_IN_PROP:
+							ConcatVar(task, PARSE_CSS_CURR_PROP, start_ptr);
+							lpCurrPropStart = NULL;
+							break;
+						case PARSE_CSS_STATE_IN_VALUE:
+							ConcatVar(task, PARSE_CSS_CURR_VALUE, start_ptr);
+							lpCurrValueStart = NULL;
+							break;
+					}
+					*ptr = chRestore;	
+					
+					if (bPast) ptr++;
+
 				}
 				break;
 			}
@@ -564,6 +660,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 				if (lpCurrSelectorStart) {
 					AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 					AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
+					//MessageBox(window->hWnd, lpCurrSelectorStart, "add 3", MB_OK);
 					ConcatVar(task, PARSE_CSS_CURR_SELECTOR, lpCurrSelectorStart);
 				}
 				break;
@@ -683,6 +780,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	LPARAM state;
 	LPARAM bInComment = FALSE;
 	LPARAM bInCommentCnt = 0; // 3 == in comment
+	LPARAM bLastWasOpen = FALSE;
+
 	LPSTR currText = NULL;
 	LPSTR currTag = NULL;
 	LPSTR currAttrib = NULL;
@@ -704,6 +803,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);
 	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT, &bInComment, NULL);
 	GetCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, &bInCommentCnt, NULL);
+	GetCustomTaskVar(task, LAST_WAS_HTML_OPEN, &bLastWasOpen, NULL);
 	
 	switch (state) {
 		case PARSE_STATE_TAG_TAGNAME:
@@ -720,6 +820,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	}
 	
 	for (;;) {
+		
+		BOOL noInc = FALSE;
 		
 		if (bInComment) {
 			while (ptr < end) {
@@ -758,35 +860,48 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 				ParseCSSChunk(window, task, &state, NULL, &ptr, len-(ptr-*buff), eof);
 				last_node_ptr = ptr;
 				break;
-			case PARSE_STATE_TAG_START:
+			case PARSE_STATE_TAG_START: {
+				BOOL inTag = FALSE;
+				char chRestore;
+				char far *ptrLastPos = NULL;
+				
+				BOOL prevTag = bLastWasOpen;
 			
-				bInCommentCnt = 0;
+				bInCommentCnt = 0;				
 			
 				while (ptr < end) {
 					if (*ptr == '<') {
+						bLastWasOpen = TRUE;
+					}
+					else if (bLastWasOpen && ! isspace(*ptr)) {
+						inTag = TRUE;
+						bLastWasOpen = FALSE;
+						prevTag = FALSE;
 						break;
+					}
+					else {
+						bLastWasOpen = FALSE;
+						ptrLastPos = ptr+1;
 					}
 					ptr++;
 				}
 				
-				if (currText) {
-					if (ptr-last_node_ptr > 0) { // We have some text append to prev text
-						int prev_len = lstrlen(currText);
-						LPSTR newText = (char far *)GlobalAlloc(GMEM_FIXED, prev_len+ptr-last_node_ptr+1);
-						_fmemset(newText, 0, prev_len+ptr-last_node_ptr+1);
-						lstrcpy(newText, currText);
-						_fstrncpy(&newText[prev_len], last_node_ptr, ptr-last_node_ptr);
-						GlobalFree((HGLOBAL)currText);
-						currText = newText;
-					}
-				}
-				else if (ptr-last_node_ptr > 0) { // New text
-					currText = (char far *)GlobalAlloc(GMEM_FIXED, ptr-last_node_ptr+1);
-					_fmemset(currText, 0, ptr-last_node_ptr+1);
-					_fstrncpy(currText, last_node_ptr, ptr-last_node_ptr);
-				}				
+				//if (inTag) ptr--;
 				
-				if (*ptr == '<') {
+				if (prevTag && ! inTag) ConcatVar(task, PARSE_DOM_CURR_TEXT, "<");
+				if (ptrLastPos) {
+					chRestore = *ptrLastPos;
+					*ptrLastPos = '\0';
+					ConcatVar(task, PARSE_DOM_CURR_TEXT, last_node_ptr);	
+					//MessageBoxA(window->hWnd, last_node_ptr, "add text", MB_OK);
+					*ptrLastPos = chRestore;
+				}
+				
+				if (bLastWasOpen) break; 
+
+				GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);				
+				
+				if (inTag) {
 					if (currText) {
 						//MessageBox(window->hWnd, currText, "text", MB_OK);
 						TextParsed(window, task, currText);
@@ -797,14 +912,16 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					state = PARSE_STATE_TAG_TAGNAME;
 					AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 					//ptr++;
-					lpCurrTagStart = ptr+1;
+					lpCurrTagStart = ptr;
+					noInc = TRUE;
 					break;
 				}
-				else if (currText) {
-					AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)currText);
-				}
+				//else if (currText) {
+				//	AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)currText);
+				//}
 
 				break;
+			}
 			case PARSE_STATE_TAG_TAGNAME:
 				while (ptr < end) {
 					if (bInCommentCnt == 0 &&  *ptr == '!') {
@@ -886,6 +1003,9 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						break;
 					}
 					else if (isspace(*ptr)) {
+						*ptr = '\0';
+						//MessageBox(window->hWnd, lpCurrAttribStart, "attrib name", MB_OK);
+						AttribNameParsed(window, task, lpCurrAttribStart);
 						state = PARSE_STATE_ATTRIB_EQUALS;
 						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						break;
@@ -960,6 +1080,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						//MessageBox(window->hWnd, lpCurrValueStart, "attrib value", MB_OK);
 						AttribValueParsed(window, task, lpCurrValueStart);
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
+						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						lpCurrValueStart = lpCurrAttribStart = NULL;
 						break;
 					}
@@ -970,10 +1091,13 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			case PARSE_STATE_ATTRIB_VALUE_SGLQOUTE:
 				while (ptr < end) {
 					if (*ptr == '\'') {
+						char chRestore = *ptr;
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
+						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						*ptr = '\0';
 						//MessageBox(window->hWnd, lpCurrValueStart, "attrib value", MB_OK);
 						AttribValueParsed(window, task, lpCurrValueStart);
+						*ptr = chRestore;
 						lpCurrValueStart = lpCurrAttribStart = NULL;
 						break;
 					}
@@ -983,10 +1107,13 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			case PARSE_STATE_ATTRIB_VALUE_DBLQOUTE:
 				while (ptr < end) {
 					if (*ptr == '"') {
+						char chRestore = *ptr;
 						state = PARSE_STATE_ATTRIB_FIND_NAME;
+						AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
 						*ptr = '\0';
 						//MessageBox(window->hWnd, lpCurrValueStart, "attrib value", MB_OK);
 						AttribValueParsed(window, task, lpCurrValueStart);
+						*ptr = chRestore;
 						lpCurrValueStart = lpCurrAttribStart = NULL;
 						break;
 					}
@@ -997,7 +1124,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 
 		if (brk) break;
 
-		ptr++;
+		if (! noInc) ptr++;
 		if (ptr >= end) break;
 	}
 	
@@ -1008,6 +1135,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					ConcatVar(task, PARSE_DOM_CURR_TAG, lpCurrTagStart);
 				}
 				break;
+			case PARSE_STATE_ATTRIB_FIND_NAME:
 			case PARSE_STATE_ATTRIB_NAME:
 				if (lpCurrAttribStart) {
 					ConcatVar(task, PARSE_DOM_CURR_ATTRIB, lpCurrAttribStart);
@@ -1020,11 +1148,17 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 					ConcatVar(task, PARSE_DOM_CURR_VALUE, lpCurrValueStart);
 				}
 				break;
+			default:
+				AddCustomTaskVar(task, PARSE_DOM_CURR_TAG, (LPARAM)NULL);
+				AddCustomTaskVar(task, PARSE_DOM_CURR_ATTRIB, (LPARAM)NULL);
+				AddCustomTaskVar(task, PARSE_DOM_CURR_VALUE, (LPARAM)NULL);
+				break;
 		}
 	}
 	
 	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT, (LPARAM)bInComment);
 	AddCustomTaskVar(task, PARSE_DOM_IN_COMMENT_CNT, bInCommentCnt);
+	AddCustomTaskVar(task, LAST_WAS_HTML_OPEN, bLastWasOpen);
 	
 	if (eof) {
 		LPSTR prevtag;
