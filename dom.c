@@ -43,6 +43,7 @@
 #define PARSE_CSS_KEYFRAMES						214
 #define PARSE_CSS_BLOCK_PARAMS					215
 #define PARSE_CSS_BLOCKTYPE						216
+#define PARSE_CSS_FOUND_SLASH					217
 #define PARSE_CSS_STATE_FIND_SELECTOR			0 // parse until !isspace
 #define PARSE_CSS_STATE_FIND_NEXT_SELECTOR		1
 #define PARSE_CSS_STATE_IN_SELECTOR				2 // parse until , {
@@ -250,6 +251,10 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	
 	LPARAM bInSQuote = FALSE;
 	LPARAM bInDQuote = FALSE;
+	
+	LPARAM last_slash = FALSE;
+	
+	GetCustomTaskVar(task, PARSE_CSS_FOUND_SLASH, &last_slash, NULL);
 		
 	GetCustomTaskVar(task, PARSE_CSS_VAR_STATE, &state, NULL);
 	GetCustomTaskVar(task, PARSE_CSS_IN_COMMENT, &bInComment, NULL);
@@ -314,21 +319,37 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 			case PARSE_CSS_STATE_FIND_SELECTOR:
 				while (ptr < end) {
 					if (*ptr == '<') {
+						last_slash = FALSE;
 						CSSEnd(window, task, &state);
 						bNoInc = TRUE;
 						break;
 					}
 					else if (*ptr == '@') {
+						last_slash = FALSE;
 						state = PARSE_CSS_STATE_IN_UNKNOWN_BLOCK;
 						//MessageBox(window->hWnd, "block found", "", MB_OK);
 						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 						blockType = ptr+1;
 						break;
 					}
+					else if (*ptr == '/') {
+						last_slash = TRUE;
+					}
+					else if (*ptr == '*') {
+						
+						if (last_slash) {
+							bInComment = TRUE;
+							last_slash = FALSE;
+							break;
+						}
+						
+					}
 					else if (*ptr == '}') {
+						last_slash = FALSE;
 						// todo close block
 					}
 					else if (! isspace(*ptr)) {
+						last_slash = FALSE;
 						lpCurrSelectorStart = ptr;
 						
 						state = PARSE_CSS_STATE_IN_SELECTOR;
@@ -893,6 +914,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	
 	AddCustomTaskVar(task, PARSE_CSS_IN_COMMENT, (LPARAM)bInComment);
 	AddCustomTaskVar(task, PARSE_CSS_LAST_STAR, (LPARAM)bLastStar);
+	
+	AddCustomTaskVar(task, PARSE_CSS_FOUND_SLASH, last_slash);
 	
 	if (eof) {
 		GetCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM far *)&lpCurrSelectorStart, NULL);
