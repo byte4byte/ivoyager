@@ -9,7 +9,8 @@
 #endif
 
 ContentWindow g_TOP_WINDOW;
-static LPSTR g_szDefURL = "d:/index.htm";
+//static LPSTR g_szDefURL = "d:/index.htm";
+static LPSTR g_szDefURL = "c:/workspace/ivoyager/index.htm";
 
 typedef struct DownloadFileTaskParams {
 	LPSTR  url;
