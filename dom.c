@@ -45,6 +45,7 @@
 #define PARSE_CSS_BLOCK_PARAMS					215
 #define PARSE_CSS_BLOCKTYPE						216
 #define PARSE_CSS_FOUND_SLASH					217
+#define PARSE_CSS_LAST_ESCAPE					218
 
 #define PARSE_CSS_STATE_FIND_SELECTOR			0
 #define PARSE_CSS_STATE_FIND_NEXT_SELECTOR		1
@@ -85,6 +86,7 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 	BOOL inSgnlQuote = FALSE;
 	BOOL inStar = FALSE;
 	*bInComment = FALSE;
+	BOOL last_escape = FALSE;
 	
 	while (*ptr) {
 		if (*bInComment) {
@@ -104,12 +106,18 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 		}
 		else {
 			if (*ptr == '"') {
-				inDblQuote = !inDblQuote;
+				if (last_escape) { /*lstrcpy(ptr-1, ptr);*/ }
+				else inDblQuote = !inDblQuote;
 			}
 			else if (*ptr == '\'') {
-				inSgnlQuote = !inSgnlQuote;
+				if (last_escape) { /*lstrcpy(ptr-1, ptr);*/ }
+				else inSgnlQuote = !inSgnlQuote;
+			}
+			else if ((inSgnlQuote || inDblQuote) && *ptr == '\\') {
+				last_escape = TRUE;
 			}
 			else if (! inDblQuote && ! inSgnlQuote) {
+				last_escape = FALSE; 
 				if (*ptr == '/') {
 					inSlash = TRUE;
 				}
@@ -121,6 +129,9 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 				else {
 					inSlash = FALSE;
 				}
+			}
+			else {
+				last_escape = FALSE;
 			}
 		}
 		ptr++;
@@ -256,11 +267,14 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	
 	LPARAM last_slash = FALSE;
 	
+	LPARAM last_escape = FALSE;
+	
 	GetCustomTaskVar(task, PARSE_CSS_FOUND_SLASH, &last_slash, NULL);
 		
 	GetCustomTaskVar(task, PARSE_CSS_VAR_STATE, &state, NULL);
 	GetCustomTaskVar(task, PARSE_CSS_IN_COMMENT, &bInComment, NULL);
 	GetCustomTaskVar(task, PARSE_CSS_LAST_STAR, &bLastStar, NULL);
+	GetCustomTaskVar(task, PARSE_CSS_LAST_ESCAPE, &last_escape, NULL);
 
 	switch (state) {
 		case PARSE_CSS_STATE_IN_SELECTOR:
@@ -448,17 +462,37 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 						break;
 					}
 					if (bInSQuote) {
-						if (*ptr == '\'' || *ptr == '\n') {
+						if (*ptr == '\'' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\'' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInSQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
+						}
 					}
 					else if (bInDQuote) {
-						if (*ptr == '\"' || *ptr == '\n') {
+						if (*ptr == '\"' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\"' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInDQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
+						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
 						}
 					}
 					else {
@@ -507,17 +541,37 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 						break;
 					}
 					if (bInSQuote) {
-						if (*ptr == '\'' || *ptr == '\n') {
+						if (*ptr == '\'' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\'' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInSQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
+						}
 					}
 					else if (bInDQuote) {
-						if (*ptr == '\"' || *ptr == '\n') {
+						if (*ptr == '\"' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\"' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInDQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
+						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
 						}
 					}
 					else if (*ptr == '<') {
@@ -702,17 +756,37 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 						break;
 					}
 					if (bInSQuote) {
-						if (*ptr == '\'' || *ptr == '\n') {
+						if (*ptr == '\'' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\'' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInSQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
 						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
+						}
 					}
 					else if (bInDQuote) {
-						if (*ptr == '\"' || *ptr == '\n') {
+						if (*ptr == '\"' && last_escape) {
+							last_escape = FALSE;
+						}
+						else if (*ptr == '\"' || *ptr == '\n') {
+							last_escape = FALSE;
 							bInDQuote = FALSE;
 							AddCustomTaskVar(task, PARSE_CSS_IN_SQUOTE, (LPARAM)bInSQuote);
 							AddCustomTaskVar(task, PARSE_CSS_IN_DQUOTE, (LPARAM)bInDQuote);
+						}
+						else if (*ptr == '\\') {
+							last_escape = TRUE;
+						}
+						else {
+							last_escape = FALSE;
 						}
 					}
 					else if (*ptr == '<') {
@@ -918,6 +992,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	AddCustomTaskVar(task, PARSE_CSS_LAST_STAR, (LPARAM)bLastStar);
 	
 	AddCustomTaskVar(task, PARSE_CSS_FOUND_SLASH, last_slash);
+	
+	AddCustomTaskVar(task, PARSE_CSS_LAST_ESCAPE, last_escape);
 	
 	if (eof) {
 		GetCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM far *)&lpCurrSelectorStart, NULL);
