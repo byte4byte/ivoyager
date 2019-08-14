@@ -285,7 +285,7 @@ typedef UINT (* lpGetDpiForWindow)(HWND hWnd);
 lpGetDpiForWindow GetDpiForWindow = NULL;
 #endif
 
-#define DEF_FONT_HEIGHT 25
+#define DEF_FONT_HEIGHT 14
 
 LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
@@ -297,12 +297,15 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				RECT rc;
 
 				GetClientRect(hWnd, &rc);
+#ifdef WIN3_1
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+#else	
+				hAddressBar = CreateWindowEx(WS_EX_STATICEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+#endif
 
 				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				if (! hTopBrowserWnd) {
 					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
-					//MessageBox(hWnd, "Unable to create richedit", "", MB_OK);
 				}
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
@@ -326,7 +329,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 					DeleteObject(hAddrBarFont);
 				}
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hAddrBarFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				hAddrBarFont = CreateFont(fontHeight-8, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
 				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
 				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
@@ -336,9 +339,13 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			}
 #endif			
 			GetClientRect(hWnd, &rc);
-
+#ifdef WIN3_1
 			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
 			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight, TRUE);
+#else
+			MoveWindow(hAddressBar, -1, 0, rc.right+2, fontHeight, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight, TRUE);
+#endif
 
 			return 0;
 		}

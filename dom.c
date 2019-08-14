@@ -85,7 +85,7 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 	BOOL inDblQuote = FALSE;
 	BOOL inSgnlQuote = FALSE;
 	BOOL inStar = FALSE;
-        BOOL last_escape = FALSE;
+    BOOL last_escape = FALSE;
 	*bInComment = FALSE;
 	
 	while (*ptr) {
@@ -146,6 +146,7 @@ BOOL inBlock = FALSE;
 BOOL inSelector = FALSE;
 BOOL bLastSelector = FALSE;
 BOOL bLastBlockParams = FALSE;
+BOOL bLastProperty = FALSE;
 
 BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
 	//bLastBlockParams = bLastSelector = FALSE;
@@ -157,7 +158,9 @@ BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
 
 BOOL CSSCloseBracket(ContentWindow far *window, Task far *task) {
 
-	bLastBlockParams = bLastSelector = FALSE;
+	bLastBlockParams = bLastSelector = bLastProperty = FALSE;
+	
+	if (! inSelector && ! inBlock) return FALSE;
 
 	if (inSelector) inSelector = FALSE;
 	else if (inBlock) inBlock = FALSE;
@@ -184,6 +187,7 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 		ResetDebugLogAttr();
 
 		bLastSelector = TRUE;
+		bLastProperty = FALSE;
 		//MessageBox(window->hWnd, fullptr, "CSS Selector", MB_OK);
 	}
 	else {
@@ -208,6 +212,7 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
 		ResetDebugLogAttr();
 		DebugLog(";\r\n");
+		bLastProperty = FALSE;
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSSValue", MB_OK);
 	}
 	
@@ -229,7 +234,11 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
 		DebugLog("@%s", Trim(fullptr, TRUE, TRUE));
 		ResetDebugLogAttr();
 		DebugLog(" ");
+		bLastProperty = FALSE;
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Type", MB_OK);
+	}
+	else {
+		*state = PARSE_CSS_STATE_FIND_SELECTOR;
 	}
 	
 	GlobalFree((HGLOBAL)fullptr);
@@ -255,6 +264,7 @@ BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr,
 		DebugLog(" ");
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Params", MB_OK);
 		bLastBlockParams = TRUE;
+		bLastProperty = FALSE;
 	}
 	
 	GlobalFree((HGLOBAL)fullptr);
@@ -269,6 +279,7 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
+		if (bLastProperty) DebugLog("\r\n");
 		if (inBlock) DebugLog("\t\t");
 		else DebugLog("\t");
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Property", MB_OK);
@@ -276,6 +287,7 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
 		ResetDebugLogAttr();
 		DebugLog(": ");
+		bLastProperty = TRUE;
 	}
 	
 	GlobalFree((HGLOBAL)fullptr);
