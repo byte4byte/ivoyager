@@ -1355,6 +1355,9 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 						end--;
 						continue;
 					}
+					else if (*ptr == '\"') {
+
+					}
 					else if (! isspace(*ptr)) {
 						state = PARSE_STATE_ATTRIB_NAME;
 						lpCurrAttribStart = ptr;

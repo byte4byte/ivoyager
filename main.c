@@ -292,6 +292,9 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	static HFONT hAddrBarFont = NULL;
 
 	switch (msg) {
+
+
+
 		case WM_CREATE:
 			{
 				RECT rc;
@@ -300,7 +303,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #ifdef WIN3_1
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #else	
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+				hAddressBar = CreateWindowEx(0, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #endif
 
 				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
@@ -318,20 +321,18 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
-		case WM_ERASEBKGND:
-			return TRUE;
 		case WM_MOVE:
 		case WM_SIZE: {
 			RECT rc;
 #ifndef WIN3_1				
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				fontHeight = (int)(((float)dpi / (float)3.5)); // 1/3.5 inch
+				fontHeight = (int)(((float)dpi / (float)3)); // 1/3.5 inch
 				if (hAddrBarFont) {
 					DeleteObject(hAddrBarFont);
 				}
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hAddrBarFont = CreateFont(fontHeight-2, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				hAddrBarFont = CreateFont(fontHeight-12, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
 				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
 				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
@@ -345,8 +346,8 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
 			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight, TRUE);
 #else
-			MoveWindow(hAddressBar, 0, 0, rc.right, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, 0, fontHeight+2, rc.right, rc.bottom-fontHeight-2, TRUE);
+			MoveWindow(hAddressBar, 4, 4, rc.right-8, fontHeight-8, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight, TRUE);
 #endif
 
 			return 0;
@@ -368,14 +369,14 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 
 			GetClientRect(hWnd, &rc);
 
-			innerShell = CreateWindowEx(WS_EX_CLIENTEDGE, "VOYAGER_INNERSHELL", "",  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_BORDER, 0, 0, rc.right, rc.bottom, hWnd, NULL, g_hInstance, NULL);
+			innerShell = CreateWindow("VOYAGER_INNERSHELL", "",  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_BORDER, 0, 0, rc.right, rc.bottom, hWnd, NULL, g_hInstance, NULL);
 
 			return 0;
 		}
 		case WM_SIZE: {
 			RECT rc;
 			GetClientRect(hWnd, &rc);
-			MoveWindow(innerShell, 0, 0, rc.right, rc.bottom, TRUE);
+			MoveWindow(innerShell, 0, 0, rc.right-0, rc.bottom-0, TRUE);
 			return 0;
 		}
 		case WM_DESTROY:
