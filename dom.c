@@ -85,8 +85,8 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
 	BOOL inDblQuote = FALSE;
 	BOOL inSgnlQuote = FALSE;
 	BOOL inStar = FALSE;
+        BOOL last_escape = FALSE;
 	*bInComment = FALSE;
-	BOOL last_escape = FALSE;
 	
 	while (*ptr) {
 		if (*bInComment) {
@@ -1096,6 +1096,7 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	if (window && ! IsWhitespace(fullptr)) {
+		DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
 		DebugLog("<");
 		DebugLogAttr(TRUE, fullptr[0] == '/' ? TRUE : FALSE, RGB(138,0,0));
 		DebugLog("%s", fullptr);
@@ -1160,11 +1161,14 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 		if (tag) {
 			if (! _fstricmp(tag, "/style")) {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)TRUE);
+				DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
 				DebugLog("\r\n<");
 				DebugLogAttr(TRUE, TRUE, RGB(138,0,0));
 				DebugLog("/style");
-				ResetDebugLogAttr();
+				
+				DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
 				DebugLog(">");
+				ResetDebugLogAttr();
 			}
 			else {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)FALSE);
@@ -1178,9 +1182,10 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 	}
 	if (tag) {
 		
+		DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
 		if (autoclose) DebugLog(" />");
 		else DebugLog(">");
-		//if (autoclose) MessageBox(window->hWnd, "autoclose", "", MB_OK);
+		ResetDebugLogAttr();
 		
 		if (! _fstricmp(tag, "style")) {
 			DebugLog("\r\n");
