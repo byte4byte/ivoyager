@@ -1097,7 +1097,7 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	
 	if (window && ! IsWhitespace(fullptr)) {
 		DebugLog("<");
-		DebugLogAttr(TRUE, FALSE, RGB(138,0,0));
+		DebugLogAttr(TRUE, fullptr[0] == '/' ? TRUE : FALSE, RGB(138,0,0));
 		DebugLog("%s", fullptr);
 		ResetDebugLogAttr();
 	}
@@ -1161,7 +1161,7 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 			if (! _fstricmp(tag, "/style")) {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)TRUE);
 				DebugLog("\r\n<");
-				DebugLogAttr(TRUE, FALSE, RGB(138,0,0));
+				DebugLogAttr(TRUE, TRUE, RGB(138,0,0));
 				DebugLog("/style");
 				ResetDebugLogAttr();
 				DebugLog(">");

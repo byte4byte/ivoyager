@@ -77,7 +77,7 @@ void DebugLog(LPSTR format, ...) {
 	ndx = GetWindowTextLength (hTopBrowserWnd);
    SetFocus (hTopBrowserWnd);
 #ifdef WIN32
-      SendMessage (hTopBrowserWnd, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+      //SendMessage (hTopBrowserWnd, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
    #else
       SendMessage (hTopBrowserWnd, EM_SETSEL, 0, MAKELONG (ndx, ndx));
    #endif
@@ -309,7 +309,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				GetClientRect(hWnd, &rc);
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 
-				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				if (! hTopBrowserWnd) MessageBox(hWnd, "Unable to create richedit", "", MB_OK);
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
