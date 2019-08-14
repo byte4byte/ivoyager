@@ -4,9 +4,89 @@
 #include "url.c"
 #include "dom.h"
 #include <stdio.h>
+#include <commctrl.h>
 #ifdef WIN3_1
 #include <wing.h>
 #endif
+#include <richedit.h>
+
+static HWND hAddressBar, hTopBrowserWnd;
+static HINSTANCE g_hInstance;
+
+void ResetDebugLogAttr() {
+	DebugLogAttr(FALSE, FALSE, RGB(0,0,0));
+	//DebugLog("");
+}
+
+void DebugLogAttr(BOOL bold, BOOL italic, COLORREF color) {
+	CHARFORMAT cf;
+	int ndx;
+	/* Fill the CHARFORMAT structure */
+    memset(&cf,0,sizeof(cf));
+    cf.cbSize = sizeof(cf);
+
+      /* Append the text to the end of the rich edit box */
+      //SendMessage (hwnd, EM_SETSEL, (WPARAM)i, (LPARAM)i);
+      //SendMessage (hwnd, EM_REPLACESEL, 0, (LPARAM)lpszText);
+      //SendMessage (hwnd, EM_REPLACESEL, 0, (LPARAM)_T("\r\n"));
+
+      /* Make the first 5 letters BOLD */
+		DWORD dwMask = CFM_COLOR | CFM_BOLD | CFM_ITALIC;
+		DWORD dwEffect = 0;
+		if (bold) {
+			dwEffect |= CFE_BOLD;
+		}
+		if (italic) {
+			dwEffect |= CFE_ITALIC;
+		}
+		cf.crTextColor = color;
+		cf.dwMask = dwMask;
+		cf.dwEffects = dwEffect;
+
+	ndx = GetWindowTextLength (hTopBrowserWnd);
+   SetFocus (hTopBrowserWnd);
+#ifdef WIN32
+      SendMessage (hTopBrowserWnd, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+   #else
+      SendMessage (hTopBrowserWnd, EM_SETSEL, 0, MAKELONG (ndx, ndx));
+#endif
+
+		SendMessage(hTopBrowserWnd,EM_SETCHARFORMAT,SCF_SELECTION,(LPARAM)&cf);
+}
+
+void DebugLog(LPSTR format, ...) {
+	int ndx;
+
+	va_list args;
+    int     len;
+    char    *buffer;
+
+    // retrieve the variable arguments
+    va_start( args, format );
+
+    len = _vscprintf( format, args ) // _vscprintf doesn't count
+                                + 1; // terminating '\0'
+
+    buffer = (char*)malloc( len * sizeof(char) );
+
+    vsprintf( buffer, format, args ); // C4996
+    // Note: vsprintf is deprecated; consider using vsprintf_s instead
+   // puts( buffer );
+
+
+	ndx = GetWindowTextLength (hTopBrowserWnd);
+   SetFocus (hTopBrowserWnd);
+#ifdef WIN32
+      SendMessage (hTopBrowserWnd, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+   #else
+      SendMessage (hTopBrowserWnd, EM_SETSEL, 0, MAKELONG (ndx, ndx));
+   #endif
+      SendMessage (hTopBrowserWnd, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) buffer));
+		//SendMessage (hTopBrowserWnd, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) "\r\n"));
+
+    free( buffer );
+    va_end( args );
+}
 
 ContentWindow g_TOP_WINDOW;
 //static LPSTR g_szDefURL = "d:/index.htm";
@@ -36,7 +116,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[2];  // min 2
+		char read_buff[1024];  // min 2
 		int len;
 		BOOL eof;
 	} READ_CHUNK;
@@ -64,14 +144,17 @@ BOOL  RunOpenUrlTask(Task far *task) {
 				ret = TRUE;
 				break;
 			}
+			SetWindowText(hTopBrowserWnd, "");
 			switch (url_info->protocol) {
 				case FILE_PROTOCOL:
 				{
 					FILE *fp;
-					MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
+					//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
+					DebugLog("\"%s\" - Opening\r\n\r\n", url_info->path);
 					fp = _ffopen(url_info->path, "rb");
 					if (! fp) { // 404
-						MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);
+						//MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);
+						DebugLog("\"%s\" - 404 Error\r\n\r\n", url_info->path);
 						ret = TRUE;
 						break;
 					}
@@ -131,7 +214,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 	//task->dwNextRun = (GetTickCount() + 5000);
 	
 	if (ret) { // free data
-		MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
+		//MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
 		if (open_url_data) {
 			if (open_url_data->fp) fclose(open_url_data->fp);
 			FreeUrlInfo(open_url_data->url_info);
@@ -181,9 +264,6 @@ void  OpenUrl(ContentWindow  far *window, LPSTR  url) {
 	#include "tests/taskdata.c"
 }
 
-static HWND hAddressBar, hTopBrowserWnd;
-static HINSTANCE g_hInstance;
-
 #ifdef WIN3_1
 static FARPROC oldAddressBarProc;
 #else
@@ -215,6 +295,8 @@ lpGetDpiForWindow GetDpiForWindow = NULL;
 
 #define DEF_FONT_HEIGHT 25
 
+
+
 LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
@@ -225,10 +307,10 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				RECT rc;
 
 				GetClientRect(hWnd, &rc);
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 
-				hTopBrowserWnd = CreateWindow("VOYAGER", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
-
+				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				if (! hTopBrowserWnd) MessageBox(hWnd, "Unable to create richedit", "", MB_OK);
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
@@ -332,6 +414,9 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	_fmemset(&g_TOP_WINDOW, 0, sizeof(ContentWindow));
 	InitTaskSystem();
 
+	LoadLibrary(TEXT("Msftedit.dll"));
+	InitCommonControls();
+
 	#include "tests/path.c"
 
 	wc.cbClsExtra = 0;
@@ -362,7 +447,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	RegisterClass(&wc);
 
-	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	UpdateWindow(browserWin);
 
 #ifdef NOTHREADS

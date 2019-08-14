@@ -24,6 +24,10 @@
 #define TEST_PATH_NORMAL
 #define DEBUG_TASK_DATA_FUNCS
 
+void DebugLog(LPSTR format, ...);
+void DebugLogAttr(BOOL bold, BOOL italic, COLORREF color);
+void ResetDebugLogAttr();
+
 #include "dom.h"
 #include "task.h"
 
