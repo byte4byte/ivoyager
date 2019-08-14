@@ -281,13 +281,13 @@ LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 }
 
 #ifndef WIN3_1
-typedef UINT (* lpGetDpiForWindow)(HWND hWnd);
+typedef UINT WINAPI (* lpGetDpiForWindow)(HWND hWnd);
 lpGetDpiForWindow GetDpiForWindow = NULL;
 #endif
 
 #define DEF_FONT_HEIGHT 14
 
-LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
 
@@ -300,10 +300,10 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 #ifdef WIN3_1
 				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #else	
-				hAddressBar = CreateWindowEx(WS_EX_STATICEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #endif
 
-				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				if (! hTopBrowserWnd) {
 					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				}
@@ -318,18 +318,20 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 #endif
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
+		case WM_ERASEBKGND:
+			return TRUE;
 		case WM_MOVE:
 		case WM_SIZE: {
 			RECT rc;
 #ifndef WIN3_1				
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				fontHeight = (int)(((float)dpi / (float)4)); // 1/4 inch
+				fontHeight = (int)(((float)dpi / (float)3.5)); // 1/3.5 inch
 				if (hAddrBarFont) {
 					DeleteObject(hAddrBarFont);
 				}
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hAddrBarFont = CreateFont(fontHeight-8, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				hAddrBarFont = CreateFont(fontHeight-2, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
 				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
 				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
@@ -343,10 +345,37 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
 			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight, TRUE);
 #else
-			MoveWindow(hAddressBar, -1, 0, rc.right+2, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight, TRUE);
+			MoveWindow(hAddressBar, 0, 0, rc.right, fontHeight, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight+2, rc.right, rc.bottom-fontHeight-2, TRUE);
 #endif
 
+			return 0;
+		}
+		case WM_NCHITTEST:
+			return HTNOWHERE;
+		default:
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	static HWND innerShell;
+	switch (msg) {
+		case WM_CREATE: {
+			
+			RECT rc;
+
+			GetClientRect(hWnd, &rc);
+
+			innerShell = CreateWindowEx(WS_EX_CLIENTEDGE, "VOYAGER_INNERSHELL", "",  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_BORDER, 0, 0, rc.right, rc.bottom, hWnd, NULL, g_hInstance, NULL);
+
+			return 0;
+		}
+		case WM_SIZE: {
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			MoveWindow(innerShell, 0, 0, rc.right, rc.bottom, TRUE);
 			return 0;
 		}
 		case WM_DESTROY:
@@ -357,6 +386,7 @@ LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
 
 LRESULT CALLBACK BrowserProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -392,11 +422,11 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifndef WIN3_1
-	HMODULE hShCore = LoadLibrary("shcore.dll");
+HMODULE hShCore = LoadLibrary("shcore.dll");
 	HMODULE user32dll = GetModuleHandle(TEXT("user32.dll"));
 	GetDpiForWindow = (lpGetDpiForWindow)GetProcAddress(user32dll, "GetDpiForWindow");
 	if (hShCore) {
-		typedef HRESULT (*lpSetProcessDpiAwareness)(int value);
+		typedef HRESULT WINAPI (*lpSetProcessDpiAwareness)(int value);
 		enum PROCESS_DPI_AWARENESS {
 		  PROCESS_DPI_UNAWARE,
 		  PROCESS_SYSTEM_DPI_AWARE,
@@ -438,7 +468,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hbrBackground = GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
 	wc.hInstance = hInstance;
@@ -447,8 +477,20 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszMenuName = NULL;
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	RegisterClass(&wc);
+	
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = icon;
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = (WNDPROC)BrowserInnerShellProc;
+	wc.lpszClassName = "VOYAGER_INNERSHELL";
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	RegisterClass(&wc);
 
-	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_THICKFRAME | WS_OVERLAPPEDWINDOW  | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	UpdateWindow(browserWin);
 
 #ifdef NOTHREADS
