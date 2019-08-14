@@ -287,8 +287,6 @@ lpGetDpiForWindow GetDpiForWindow = NULL;
 
 #define DEF_FONT_HEIGHT 25
 
-
-
 LRESULT  CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;

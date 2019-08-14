@@ -149,7 +149,9 @@ BOOL bLastBlockParams = FALSE;
 
 BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
 	//bLastBlockParams = bLastSelector = FALSE;
+	DebugLogAttr(TRUE, FALSE, RGB(0,0,0));	
 	DebugLog(" {\r\n");
+	ResetDebugLogAttr();
 	return TRUE;
 }
 
@@ -157,22 +159,18 @@ BOOL CSSCloseBracket(ContentWindow far *window, Task far *task) {
 
 	bLastBlockParams = bLastSelector = FALSE;
 
-		if (inSelector) inSelector = FALSE;
-		else if (inBlock) inBlock = FALSE;
-
+	if (inSelector) inSelector = FALSE;
+	else if (inBlock) inBlock = FALSE;
+	DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
 	if (inBlock) DebugLog("\t}\r\n");
 	else DebugLog("}\r\n");
-
+	ResetDebugLogAttr();
 	return TRUE;
 }
 
 BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
-	//LPSTR prevtag;
 	LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_SELECTOR, ptr);
-	
-	//GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-	//if (prevtag) GlobalFree((HGLOBAL)prevtag);
-	
+		
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
 		fullptr = Trim(fullptr, TRUE, TRUE);
@@ -196,17 +194,12 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	GlobalFree((HGLOBAL)fullptr);
 	
 	AddCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM)NULL);
-	//AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
 	
 	return TRUE;
 }
 
 BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment) {
-	//LPSTR prevtag;
 	LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_VALUE, ptr);
-	
-	//GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-	//if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
@@ -221,16 +214,12 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	GlobalFree((HGLOBAL)fullptr);
 	
 	AddCustomTaskVar(task, PARSE_CSS_CURR_VALUE, (LPARAM)NULL);
-	//AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
 	
 	return TRUE;
 }
 
 BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
 	LPSTR fullptr = ConcatVar(task, PARSE_CSS_BLOCKTYPE, ptr);
-	
-	//GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-	//if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {	
@@ -246,7 +235,6 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
 	GlobalFree((HGLOBAL)fullptr);
 	
 	AddCustomTaskVar(task, PARSE_CSS_BLOCKTYPE, (LPARAM)NULL);
-	//AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
 	
 	return TRUE;
 }
@@ -255,9 +243,6 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
 
 BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
 	LPSTR fullptr = ConcatVar(task, PARSE_CSS_BLOCK_PARAMS, ptr);
-	
-	//GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-	//if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {	
@@ -271,23 +256,16 @@ BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr,
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Params", MB_OK);
 		bLastBlockParams = TRUE;
 	}
-
-	
 	
 	GlobalFree((HGLOBAL)fullptr);
 	
 	AddCustomTaskVar(task, PARSE_CSS_BLOCK_PARAMS, (LPARAM)NULL);
-	//AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
-	
+
 	return TRUE;
 }
 
 BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment) {
-		//LPSTR prevtag;
 	LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_PROP, ptr);
-	
-	//GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-	//if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
@@ -303,7 +281,6 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	GlobalFree((HGLOBAL)fullptr);
 	
 	AddCustomTaskVar(task, PARSE_CSS_CURR_PROP, (LPARAM)NULL);
-	//AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
 	
 	return TRUE;
 }
@@ -465,57 +442,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 					}
 					ptr++;
 				}
-			}
-/*			case PARSE_CSS_STATE_FIND_NEXT_BLOCK_PARAMS:
-				while (ptr < end) {
-					if (*ptr == '<') {
-						CSSEnd(window, task, &state);
-						bNoInc = TRUE;
-						break;
-					}
-					else if (*ptr == '{') {
-						*ptr = '\0';
-						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-						BlockParamsParsed(window, task, blockParams, &bInComment, &state);
-						state = PARSE_CSS_STATE_FIND_SELECTOR;
-						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-						break;
-					}
-					else if (! isspace(*ptr)) {
-						blockParams = ptr;
-						state = PARSE_CSS_STATE_IN_BLOCK_PARAMS;
-						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-						bNoInc = TRUE;
-						break;
-					}
-					ptr++;
-				}
 				break;
-			case PARSE_CSS_STATE_FIND_NEXT_SELECTOR:
-				while (ptr < end) {
-					if (*ptr == '<') {
-						CSSEnd(window, task, &state);
-						bNoInc = TRUE;
-						break;
-					}
-					else if (*ptr == '{') {
-						*ptr = '\0';
-						//MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-						state = PARSE_CSS_STATE_FIND_PROP;
-						SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state);
-						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-						break;
-					}
-					else if (! isspace(*ptr)) {
-						lpCurrSelectorStart = ptr;
-						state = PARSE_CSS_STATE_IN_SELECTOR;
-						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-						bNoInc = TRUE;
-						break;
-					}
-					ptr++;
-				}
-				break;*/
+			}
 			case PARSE_CSS_STATE_IN_BLOCK_PARAMS:
 				while (ptr < end) {
 					if (*ptr == '<') {
