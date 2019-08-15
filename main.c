@@ -331,43 +331,77 @@ lpGetDpiForWindow GetDpiForWindow = NULL;
 
 LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static HWND hSource, hPage, hConsole;
+	static HFONT hToggleFont;
 	switch (msg) {
 		case WM_CREATE: {
-			HFONT hFont;
+			
 #ifndef WIN3_1			
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
+				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
 			else {
-				hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}
 #else
-			hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "System");
+			hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
 #endif
-			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
-			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
-			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
+			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
+			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)2, g_hInstance, NULL);
+			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)3, g_hInstance, NULL);
 			
-			SendMessage(hSource, WM_SETFONT, (WPARAM)hFont, TRUE);
-			SendMessage(hPage, WM_SETFONT, (WPARAM)hFont, TRUE);
-			SendMessage(hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
+			//SendMessage(hSource, WM_SETFONT, (WPARAM)hFont, TRUE);
+			//SendMessage(hPage, WM_SETFONT, (WPARAM)hFont, TRUE);
+			//SendMessage(hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
 			
-			SendMessage(hSource, BM_SETCHECK, BST_CHECKED, 0);
+			//SendMessage(hSource, BM_SETCHECK, BST_CHECKED, 0);
 			
 			return 0;
 		}
+		case WM_DRAWITEM: {
+			LPDRAWITEMSTRUCT di = (LPDRAWITEMSTRUCT)lParam;
+			HFONT hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFont);
+			
+			if (wParam == 1) FillRect(di->hDC, &di->rcItem, GetStockObject(WHITE_BRUSH));
+			else {
+#ifdef WIN3_1				
+				FillRect(di->hDC, &di->rcItem, GetStockObject(LTGRAY_BRUSH));
+#else
+				FillRect(di->hDC, &di->rcItem, (HBRUSH)COLOR_WINDOW);
+#endif
+			}
+			SetBkMode(di->hDC, TRANSPARENT);
+			switch (wParam) {
+				case 1:
+					DrawText(di->hDC, "Source", 6, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					break;
+				case 2:
+					DrawText(di->hDC, "Page", 4, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					break;					
+				case 3:
+					DrawText(di->hDC, "Console", 7, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					break;					
+			}
+			SelectObject(di->hDC, hPrevFont);
+			return TRUE;
+		}
 		case WM_SIZE: {
 			RECT rc, rcBtn;
+			int l, padding;
+			
 			GetClientRect(hWnd, &rc);
 			GetWindowRect(hConsole, &rcBtn);
-			int l = rc.right;
-			int padding = 0;
+			l = rc.right;
+			padding = 0;
 			
 			rcBtn.left = 0;
-			rcBtn.right = 180;
+#ifdef WIN3_1			
+			rcBtn.right = 65;
+#else
+			rcBtn.right = 115;
+#endif
 			
 			MoveWindow(hConsole, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom,  TRUE);
 			l -= ((rcBtn.right - rcBtn.left) - padding);
@@ -375,7 +409,11 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			GetWindowRect(hSource, &rcBtn);
 			
 			rcBtn.left = 0;
-			rcBtn.right = 180;
+#ifdef WIN3_1			
+			rcBtn.right = 65;
+#else
+			rcBtn.right = 115;
+#endif
 			
 			MoveWindow(hSource, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom, TRUE);
 			l -= ((rcBtn.right - rcBtn.left) - padding);
@@ -383,7 +421,11 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			GetWindowRect(hPage, &rcBtn);
 			
 			rcBtn.left = 0;
-			rcBtn.right = 180;
+#ifdef WIN3_1			
+			rcBtn.right = 65;
+#else
+			rcBtn.right = 115;
+#endif
 			
 			MoveWindow(hPage, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom, TRUE);
 			
@@ -394,7 +436,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			PAINTSTRUCT ps;
 			RECT rc;
 			HDC hDC;
-			HFONT hFont;
+			static HFONT hFont = NULL;
 			HFONT hPrevFont;
 			
 			if (! lpszStatus) return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -405,13 +447,13 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 				UINT dpi = GetDpiForWindow(hWnd);
 				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				if (! hFont) hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
 			else {
-				hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				if (! hFont) hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}
 #else
-			hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "System");
+			if (! hFont) hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
 #endif
 			
 			hPrevFont = (HFONT)SelectObject(hDC, hFont);
@@ -420,7 +462,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			SetBkMode(hDC, TRANSPARENT);
 			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
 			SelectObject(hDC, hPrevFont);
-			DeleteObject(hFont);
+			//DeleteObject(hFont);
 			EndPaint(hWnd, &ps);
 			return 0;
 		}
