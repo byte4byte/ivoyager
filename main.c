@@ -170,6 +170,12 @@ BOOL  RunOpenUrlTask(Task far *task) {
 			}
 			SetWindowText(hTopBrowserWnd, "");
 			switch (url_info->protocol) {
+				case HTTP_PROTOCOL: 
+				{
+					SetStatusText("Connecting to: \"%s\"", url_info->domain);
+					ret = TRUE;
+					break;
+				}
 				case FILE_PROTOCOL:
 				{
 					FILE *fp;
