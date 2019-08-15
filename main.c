@@ -114,7 +114,7 @@ void SetStatusText(LPSTR format, ...) {
 }
 
 ContentWindow g_TOP_WINDOW;
-static LPSTR g_szDefURL = "d:/index.htm";
+static LPSTR g_szDefURL = "ivoyager.online";
 
 typedef struct DownloadFileTaskParams {
 	LPSTR  url;
@@ -338,6 +338,7 @@ lpGetDpiForWindow GetDpiForWindow = NULL;
 LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static HWND hSource, hPage, hConsole;
 	static HFONT hToggleFont;
+	static HFONT hToggleFontBold;
 	switch (msg) {
 		case WM_CREATE: {
 			
@@ -347,12 +348,15 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
 			else {
 				hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}
 #else
 			hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+			hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
 #endif
 			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
 			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)2, g_hInstance, NULL);
@@ -368,10 +372,16 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 		}
 		case WM_DRAWITEM: {
 			LPDRAWITEMSTRUCT di = (LPDRAWITEMSTRUCT)lParam;
-			HFONT hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFont);
-			
-			if (wParam == 1) FillRect(di->hDC, &di->rcItem, GetStockObject(WHITE_BRUSH));
+			HFONT hPrevFont;
+		
+			if (wParam == 1) {
+				SetTextColor(di->hDC, RGB(0, 0, 0));
+				hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFontBold);
+				FillRect(di->hDC, &di->rcItem, GetStockObject(WHITE_BRUSH));
+			}
 			else {
+				SetTextColor(di->hDC, RGB(33, 33, 33));
+				hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFont);
 #ifdef WIN3_1				
 				FillRect(di->hDC, &di->rcItem, GetStockObject(LTGRAY_BRUSH));
 #else
@@ -381,12 +391,21 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			SetBkMode(di->hDC, TRANSPARENT);
 			switch (wParam) {
 				case 1:
+					SetTextColor(di->hDC, RGB(200, 200, 200));
+					di->rcItem.left += 2;
+					di->rcItem.top += 2;
 					DrawText(di->hDC, "Source", 6, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					SetTextColor(di->hDC, RGB(0, 0, 0));
+					di->rcItem.left -= 2;
+					di->rcItem.top -= 2;
+					DrawText(di->hDC, "Source", 6, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );	
 					break;
 				case 2:
+					SetTextColor(di->hDC, RGB(44, 44, 44));
 					DrawText(di->hDC, "Page", 4, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
 					break;					
 				case 3:
+					SetTextColor(di->hDC, RGB(44, 44, 44));
 					DrawText(di->hDC, "Console", 7, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
 					break;					
 			}
@@ -451,7 +470,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 #ifndef WIN3_1			
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
+				int fontHeight = (int)(((float)dpi / (float)6.0)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 				if (! hFont) hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
@@ -466,6 +485,13 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			GetClientRect(hWnd, &rc);
 			rc.left += 4;
 			SetBkMode(hDC, TRANSPARENT);
+			SetTextColor(hDC, RGB(255, 255, 255));
+			rc.left+=2;
+			rc.top+=2;
+			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
+			rc.left-=2;
+			rc.top-=2;
+			SetTextColor(hDC, RGB(33, 33, 33));
 			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
 			SelectObject(hDC, hPrevFont);
 			//DeleteObject(hFont);
@@ -502,6 +528,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				if (! hTopBrowserWnd) {
 					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				}
+				//SendMessage(hTopBrowserWnd, EM_SETBKGNDCOLOR, 0, RGB( 0,0,0 ) );
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
 				OpenUrl(&g_TOP_WINDOW, g_szDefURL);
@@ -548,8 +575,8 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			MoveWindow(hAddressBar, 4, 4, rc.right-8, fontHeight-8, TRUE);
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
-			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight, TRUE);				
-			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight, rc.right, rc.bottom-fontHeight-fontHeight+3, TRUE);				
+			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight+3, rc.right+2, fontHeight+2-3, TRUE);
 #endif
 
 			return 0;
@@ -686,7 +713,7 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 #ifdef WIN3_1	
 	wc.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
 #else
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 #endif
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
