@@ -81,6 +81,38 @@ void DebugLog(LPSTR format, ...) {
 	va_end(args);
 }
 
+LPSTR lpszStatus =  NULL;
+HWND hStatusBar = NULL;
+
+void SetStatusText(LPSTR format, ...) {
+	
+	
+	int ndx;
+
+	va_list args;
+	int     len;
+	
+	if (lpszStatus) GlobalFree((HGLOBAL)lpszStatus);
+
+	// retrieve the variable arguments
+	va_start( args, format );
+
+#ifndef WIN3_1
+	len = _vscprintf( format, args ) // _vscprintf doesn't count
+								+ 1; // terminating '\0'
+#else
+	len = 1024;
+#endif
+
+	lpszStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, len * sizeof(char) );
+
+	wvsprintf( lpszStatus, format, args ); // C4996
+
+	va_end(args);	
+	
+	if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
+}
+
 ContentWindow g_TOP_WINDOW;
 static LPSTR g_szDefURL = "d:/index.htm";
 
@@ -142,13 +174,16 @@ BOOL  RunOpenUrlTask(Task far *task) {
 				{
 					FILE *fp;
 					//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
-					DebugLog("\"%s\" - Opening\r\n\r\n", url_info->path);
+					SetStatusText("Opening: \"%s\"", url_info->path);
 					fp = _ffopen(url_info->path, "rb");
 					if (! fp) { // 404
 						//MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);
-						DebugLog("\"%s\" - 404 Error\r\n\r\n", url_info->path);
+						SetStatusText("\"%s\" - 404 Error", url_info->path);
 						ret = TRUE;
 						break;
+					}
+					else {
+						SetStatusText("Opened: \"%s\"", url_info->path);
 					}
 					
 					open_url_data = (OPEN_URL_DATA far *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
@@ -174,10 +209,12 @@ BOOL  RunOpenUrlTask(Task far *task) {
 			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff)-1, open_url_data->fp);
 			read_chunk->eof = feof(open_url_data->fp);
 			if (read_chunk->len <= 0) {
+				SetStatusText("Done: \"%s\"", open_url_data->url_info->path);
 				LocalFree((HGLOBAL)read_chunk);
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
 			}
 			else {	
+				SetStatusText("Reading: \"%s\"", open_url_data->url_info->path);
 				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 			}
 			//break;
@@ -195,6 +232,7 @@ BOOL  RunOpenUrlTask(Task far *task) {
 			ptr = read_chunk->read_buff;
 			
 			if (ParseDOMChunk(&g_TOP_WINDOW, task, (char far **)&ptr, read_chunk->len, read_chunk->eof)) {
+				
 				LocalFree((HLOCAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
 			}
@@ -264,6 +302,9 @@ static WNDPROC oldAddressBarProc;
 
 LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
+		case WM_LBUTTONDOWN:
+			SetFocus(hWnd);
+			break;
 		case WM_KEYDOWN:
 			if (wParam == VK_RETURN) {
 				LPSTR url;
@@ -285,11 +326,112 @@ typedef UINT WINAPI (* lpGetDpiForWindow)(HWND hWnd);
 lpGetDpiForWindow GetDpiForWindow = NULL;
 #endif
 
-#define DEF_FONT_HEIGHT 14
+#define DEF_FONT_HEIGHT 25
+#define DEF_DPI_FONT_HEIGHT 14
+
+LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	static HWND hSource, hPage, hConsole;
+	switch (msg) {
+		case WM_CREATE: {
+			HFONT hFont;
+#ifndef WIN3_1			
+			if (GetDpiForWindow) {
+				UINT dpi = GetDpiForWindow(hWnd);
+				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
+				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
+				hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}			
+			else {
+				hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}
+#else
+			hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "System");
+#endif
+			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
+			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
+			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTORADIOBUTTON, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
+			
+			SendMessage(hSource, WM_SETFONT, (WPARAM)hFont, TRUE);
+			SendMessage(hPage, WM_SETFONT, (WPARAM)hFont, TRUE);
+			SendMessage(hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
+			
+			SendMessage(hSource, BM_SETCHECK, BST_CHECKED, 0);
+			
+			return 0;
+		}
+		case WM_SIZE: {
+			RECT rc, rcBtn;
+			GetClientRect(hWnd, &rc);
+			GetWindowRect(hConsole, &rcBtn);
+			int l = rc.right;
+			int padding = 0;
+			
+			rcBtn.left = 0;
+			rcBtn.right = 180;
+			
+			MoveWindow(hConsole, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom,  TRUE);
+			l -= ((rcBtn.right - rcBtn.left) - padding);
+			
+			GetWindowRect(hSource, &rcBtn);
+			
+			rcBtn.left = 0;
+			rcBtn.right = 180;
+			
+			MoveWindow(hSource, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom, TRUE);
+			l -= ((rcBtn.right - rcBtn.left) - padding);
+			
+			GetWindowRect(hPage, &rcBtn);
+			
+			rcBtn.left = 0;
+			rcBtn.right = 180;
+			
+			MoveWindow(hPage, l - (rcBtn.right - rcBtn.left) - padding, 0, (rcBtn.right - rcBtn.left) + padding, rc.bottom, TRUE);
+			
+			return 0;
+		}
+		case WM_PAINT: {
+			
+			PAINTSTRUCT ps;
+			RECT rc;
+			HDC hDC;
+			HFONT hFont;
+			HFONT hPrevFont;
+			
+			if (! lpszStatus) return DefWindowProc(hWnd, msg, wParam, lParam);
+			
+			hDC = BeginPaint(hWnd, &ps);
+#ifndef WIN3_1			
+			if (GetDpiForWindow) {
+				UINT dpi = GetDpiForWindow(hWnd);
+				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
+				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
+				hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}			
+			else {
+				hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}
+#else
+			hFont = CreateFont(20, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "System");
+#endif
+			
+			hPrevFont = (HFONT)SelectObject(hDC, hFont);
+			GetClientRect(hWnd, &rc);
+			rc.left += 4;
+			SetBkMode(hDC, TRANSPARENT);
+			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
+			SelectObject(hDC, hPrevFont);
+			DeleteObject(hFont);
+			EndPaint(hWnd, &ps);
+			return 0;
+		}
+	}
+	return (DefWindowProc(hWnd, msg, wParam, lParam));
+}
 
 LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
+	static HWND hToggleBar;
 
 	switch (msg) {
 
@@ -306,9 +448,11 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				hAddressBar = CreateWindowEx(0, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #endif
 
+				hStatusBar = hToggleBar = CreateWindow("VOYAGER_SHELL_TOGGLEBAR", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, 1, 1, hWnd, NULL, g_hInstance, NULL);
+
 				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				if (! hTopBrowserWnd) {
-					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL | WS_BORDER, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
 				}
 				g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
@@ -336,6 +480,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
 				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
+				SendMessage(hToggleBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
 
 				//GetClientRect(hAddressBar, &rc);
 				fontHeight += 2;
@@ -343,11 +488,20 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif			
 			GetClientRect(hWnd, &rc);
 #ifdef WIN3_1
+#if 0
 			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight, TRUE);
+			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight-fontHeight, TRUE);
+			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight-1, rc.right+2, fontHeight+2, TRUE);
+#endif
+			MoveWindow(hAddressBar, 4, 4, rc.right-8, fontHeight, TRUE);
+			MoveWindow(hTopBrowserWnd, -1, fontHeight+8, rc.right+1, rc.bottom-fontHeight-fontHeight-8, TRUE);				
+			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
 #else
 			MoveWindow(hAddressBar, 4, 4, rc.right-8, fontHeight-8, TRUE);
-			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-4, TRUE);
+//			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
+			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
+			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight, TRUE);				
+			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
 #endif
 
 			return 0;
@@ -481,7 +635,11 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 	
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
+#ifdef WIN3_1	
+	wc.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
+#else
 	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+#endif
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
 	wc.hInstance = hInstance;
@@ -490,6 +648,24 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 	wc.lpszMenuName = NULL;
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	RegisterClass(&wc);
+	
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+#ifdef WIN3_1	
+	wc.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
+#else
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+#endif
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = icon;
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = (WNDPROC)BrowserShellToggleBar;
+	wc.lpszClassName = "VOYAGER_SHELL_TOGGLEBAR";
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	RegisterClass(&wc);
+	
+	SetStatusText("Ready...");
 
 	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_THICKFRAME | WS_OVERLAPPEDWINDOW  | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	UpdateWindow(browserWin);
