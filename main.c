@@ -598,12 +598,16 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
-void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected) {
+COLORREF GetTabColor(BOOL selected, BOOL special) {
+	return (selected ? RGB(222, 50, 50) : (special ? RGB(44, 44, 44) : RGB(142, 142, 142)));
+}
+
+void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL special) {
 	HPEN hpen;
 	HPEN hPrevBrush;
 	static HFONT hToggleFontBold = NULL;
 	static HFONT hToggleFont = NULL;
-	HBRUSH hbr = CreateSolidBrush((selected ? RGB(222, 50, 50) : RGB(142, 142, 142)));
+	HBRUSH hbr = CreateSolidBrush(GetTabColor(selected, special));
 
 
 #ifndef WIN3_1			
@@ -648,9 +652,9 @@ else SelectObject(hDC, hToggleFont);
 
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #else
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
@@ -696,9 +700,9 @@ else SelectObject(hDC, hToggleFont);
 
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #else
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
@@ -711,9 +715,9 @@ else SelectObject(hDC, hToggleFont);
 	DeleteObject(hpen);
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #else
-	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
+	hpen = CreatePen(PS_SOLID, 1, GetTabColor(selected, special));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
@@ -730,13 +734,17 @@ else SelectObject(hDC, hToggleFont);
 void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 	RECT rcTab;
 
+	#define NUM_TABS 1
+
 	int bottom = rc->top + rc->bottom;
 
 	int l = rc->left;
 	int tabSize = 165;
+	tabSize = (rc->right-50) / (NUM_TABS+1);
+	tabSize = (tabSize > 200) ? 200 : tabSize;
 	rcTab.left = l;
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < NUM_TABS; i++) {
 		BOOL selected = (i==0);
 		rcTab.top = rc->top;
 		rcTab.right = rcTab.left + tabSize;
@@ -748,16 +756,19 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 		}
 		switch (i) {
 			case 0:
-				drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected);
+				drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE);
 				break;
 			case 1:
-				drawTab(hWnd, hDC, &rcTab, "MSN.com", selected);
+				drawTab(hWnd, hDC, &rcTab, "MSN.com", selected, FALSE);
 				break;
 			case 2:
-				drawTab(hWnd, hDC, &rcTab, "Google", selected);
+				drawTab(hWnd, hDC, &rcTab, "Google", selected, FALSE);
 				break;
 			case 3:
-				drawTab(hWnd, hDC, &rcTab, "Nintendo", selected);
+				drawTab(hWnd, hDC, &rcTab, "Nintendo", selected, FALSE);
+				break;
+			default:
+				if (rcTab.right < rc->right-50) drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE);
 				break;
 		}
 		if (! selected) {
@@ -768,13 +779,12 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 		rcTab.left += tabSize + 3;
 	}
 
-	rcTab.top += 4;
-	//rcTab.bottom -= 8;
-	//rcTab.left += tabSize;
-	rcTab.left = rc->right - 36;
-	rcTab.right = rcTab.left + 36 - 1;
+	rcTab.top += 5;
+	//rcTab.left = rc->right - 36;
+	//rcTab.left += 6;
+	rcTab.right = rcTab.left + 44 - 1;
 
-	drawTab(hWnd, hDC, &rcTab, " + ", FALSE);
+	drawTab(hWnd, hDC, &rcTab, " + ", FALSE, TRUE);
 
 }
 
