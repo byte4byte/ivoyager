@@ -648,9 +648,9 @@ else SelectObject(hDC, hToggleFont);
 
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #else
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
@@ -696,9 +696,9 @@ else SelectObject(hDC, hToggleFont);
 
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #else
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
@@ -711,9 +711,9 @@ else SelectObject(hDC, hToggleFont);
 	DeleteObject(hpen);
 
 #ifdef WIN3_1			
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #else
-	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(222, 50, 50) : RGB(142, 142, 142));
 #endif
 	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
 #ifdef WIN3_1			
