@@ -599,7 +599,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 }
 
 COLORREF GetTabColor(BOOL selected, BOOL special) {
-	return (selected ? RGB(222, 50, 50) : (special ? RGB(44, 44, 44) : RGB(142, 142, 142)));
+	return (selected ? RGB(222, 50, 50) : (special ? RGB(44, 44, 44) : RGB(82, 82, 82)));
 }
 
 void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL special) {
