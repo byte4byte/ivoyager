@@ -740,23 +740,30 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 
 	int l = rc->left;
 	int tabSize = 165;
+	int i;
+	
 	tabSize = (rc->right-50) / (NUM_TABS+1);
 	tabSize = (tabSize > 200) ? 200 : tabSize;
 	tabSize = (tabSize < 15) ? 15 : tabSize;
 	rcTab.left = l;
 
-	for (int i = 0; i < NUM_TABS; i++) {
+	for (i = 0; i < NUM_TABS; i++) {
 		BOOL selected = (i==0);
 		rcTab.top = rc->top;
 		rcTab.right = rcTab.left + tabSize;
 		rcTab.bottom = bottom+1;
 
 		if (rcTab.right > rc->right-50)	break;
+		
+#ifdef WIN3_1
+	rcTab.top -= 5;
+#endif		
 
-		if (! selected) {
-			rcTab.top+=5;
-			//rcTab.bottom-=5;
+#ifndef WIN3_1
+		if (selected) {
+			rcTab.top-=5;
 		}
+#endif
 		switch (i) {
 			case 0:
 				drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE);
@@ -774,15 +781,16 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 				 drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE);
 				break;
 		}
-		if (! selected) {
-			rcTab.top-=5;
-			//rcTab.bottom+=5;
+#ifndef WIN3_1
+		if (selected) {			
+			rcTab.top+=5;
 		}
+#endif
 
 		rcTab.left += tabSize + 3;
 	}
 
-	rcTab.top += 5;
+	//rcTab.top += 5;
 	//rcTab.left = rc->right - 36;
 	//rcTab.left += 6;
 	rcTab.right = rcTab.left + 44 - 1;
@@ -844,7 +852,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			ptStart.x = 0;
 			ptEnd.x = rc.right;
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8;
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-1;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2);
@@ -865,7 +873,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			ptStart.x = 0;
 			ptEnd.x = rc.right;
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-1;
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-2;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-1;
@@ -873,7 +881,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-3;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-2;
@@ -886,7 +894,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			ptEnd.y = ptStart.y = 1;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = 1;
@@ -894,7 +902,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			ptEnd.y = 2;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = 2;
@@ -911,7 +919,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
 #endif
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			ptEnd.y = ptStart.y = 0;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
 			ptEnd.y = ptStart.y = 0;
@@ -957,14 +965,13 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif			
 			GetClientRect(hWnd, &rc);
 #ifdef WIN3_1
-#if 0
-			MoveWindow(hAddressBar, -1, -1, rc.right+2, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, 0, fontHeight-1, rc.right, rc.bottom-fontHeight-fontHeight, TRUE);
-			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight-1, rc.right+2, fontHeight+2, TRUE);
-#endif
-			MoveWindow(hAddressBar, 4, 4, rc.right-8, fontHeight, TRUE);
-			MoveWindow(hTopBrowserWnd, -1, fontHeight+9, rc.right+1, rc.bottom-fontHeight-fontHeight-9, TRUE);				
+			{	
+			int t = fontHeight+4;
+			MoveWindow(hAddressBar, 4, t, rc.right-8, fontHeight, TRUE);
+			t += fontHeight;
+			MoveWindow(hTopBrowserWnd, -1, t+9, rc.right+1, rc.bottom-fontHeight-t-9, TRUE);				
 			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
+			}
 #else
 			int t = fontHeight+padding;
 			MoveWindow(hAddressBar, padding, t, rc.right-(padding*2), fontHeight-8, TRUE);
