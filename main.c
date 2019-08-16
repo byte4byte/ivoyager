@@ -347,11 +347,11 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 				UINT dpi = GetDpiForWindow(hWnd);
 				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
 			else {
-				hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFont = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}
 #else
@@ -405,6 +405,40 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			MoveToEx(di->hDC, 0, 0, NULL);
 #endif
 			LineTo(di->hDC, di->rcItem.right, 0);
+
+
+			SelectObject(di->hDC, hPrevBrush);
+			DeleteObject(hbr);
+
+#ifdef WIN3_1			
+			hbr = CreatePen(PS_SOLID, 1, RGB(152, 152, 152));
+#else
+			hbr = CreatePen(PS_SOLID, 1, RGB(152, 152, 152));
+#endif
+			hPrevBrush = (HPEN)SelectObject(di->hDC, hbr);
+
+#ifdef WIN3_1
+			MoveTo(di->hDC, 0, 0);
+#else
+			MoveToEx(di->hDC, 0, 0, NULL);
+#endif
+			LineTo(di->hDC, 0, di->rcItem.bottom-0);
+
+#ifdef WIN3_1			
+			hbr = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+#else
+			hbr = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+#endif
+			hPrevBrush = (HPEN)SelectObject(di->hDC, hbr);
+
+#ifdef WIN3_1
+			MoveTo(di->hDC, 1, 0);
+#else
+			MoveToEx(di->hDC, 1, 0, NULL);
+#endif
+			LineTo(di->hDC, 1, di->rcItem.bottom-0);
+
+
 			SelectObject(di->hDC, hPrevBrush);
 			DeleteObject(hbr);
 			}			
@@ -508,7 +542,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 #ifdef WIN3_1
 			rc.left += 4;
 #else
-			rc.left += 12;
+			rc.left += 6;
 #endif
 			SetBkMode(hDC, TRANSPARENT);
 			
@@ -517,8 +551,9 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			rc.top+=2;
 			SetTextColor(hDC, RGB(200, 200, 200));
 #else
-			rc.left+=4;
-			//rc.top+=4;
+			rc.left+=1;
+			rc.top+=1;
+			//SetTextColor(hDC, RGB(255, 255, 255));
 			SetTextColor(hDC, RGB(255, 255, 255));
 #endif
 			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
@@ -528,9 +563,9 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			rc.top-=2;
 			SetTextColor(hDC, RGB(0, 0, 0));
 #else
-			rc.left-=4;
-			//rc.top-=4;
-			SetTextColor(hDC, RGB(33, 33, 33));
+			rc.left-=1;
+			rc.top-=1;
+			SetTextColor(hDC, RGB(66, 66, 66));
 #endif
 			DrawText(hDC, lpszStatus, lstrlen(lpszStatus), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE );
 			SelectObject(hDC, hPrevFont);
@@ -563,16 +598,193 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
+void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected) {
+	HPEN hpen;
+	HPEN hPrevBrush;
+	static HFONT hToggleFontBold = NULL;
+	static HFONT hToggleFont = NULL;
+	HBRUSH hbr = CreateSolidBrush((selected ? RGB(222, 50, 50) : RGB(142, 142, 142)));
+
+
+#ifndef WIN3_1			
+			if (GetDpiForWindow) {
+				UINT dpi = GetDpiForWindow(hWnd);
+				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
+				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
+				if (! hToggleFont) hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				if (! hToggleFontBold) hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}			
+			else {
+				if (! hToggleFont) hToggleFont = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				if (! hToggleFontBold) hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}
+#else
+			if (! hToggleFont) hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+			if (! hToggleFontBold) hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+#endif
+
+
+	//HBRUSH hPrevBrush = (HBRUSH)SelectObject(hDC, hbr);
+rc->left+=1;
+	FillRect(hDC, rc,hbr);
+rc->left-=1;
+	SetBkMode(hDC, TRANSPARENT);
+	//SetTextColor(hDC, RGB(66, 66, 66));
+	//DrawText(hDC, "Tab 1", 5, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+
+if (selected) SelectObject(hDC, hToggleFontBold);
+else SelectObject(hDC, hToggleFont);
+
+					SetTextColor(hDC, selected ? RGB(0, 0, 0) : RGB(0, 0, 0));
+					rc->left += 2;
+					rc->top += 2;
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					SetTextColor(hDC, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
+					rc->left -= 2;
+					rc->top -= 2;
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+
+	DeleteObject(hbr);
+
+
+#ifdef WIN3_1			
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#else
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#endif
+	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
+#ifdef WIN3_1			
+	MoveTo(hDC, rc->left, rc->top+1);
+#else
+	MoveToEx(hDC, rc->left, rc->top+1, NULL);
+#endif
+	LineTo(hDC, rc->left, rc->bottom);
+	SelectObject(hDC, hPrevBrush);
+	DeleteObject(hpen);
+
+#ifdef WIN3_1			
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
+#else
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
+#endif
+	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
+#ifdef WIN3_1			
+	MoveTo(hDC, rc->left+2, rc->top+1);
+#else
+	MoveToEx(hDC, rc->left+2, rc->top+1, NULL);
+#endif
+	LineTo(hDC, rc->right-1, rc->top+1);
+	SelectObject(hDC, hPrevBrush);
+	DeleteObject(hpen);
+
+
+#ifdef WIN3_1			
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
+#else
+	hpen = CreatePen(PS_SOLID, 1, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
+#endif
+	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
+#ifdef WIN3_1			
+	MoveTo(hDC, rc->left+1, rc->top+1);
+#else
+	MoveToEx(hDC, rc->left+1, rc->top+1, NULL);
+#endif
+	LineTo(hDC, rc->left+1, rc->bottom);
+	SelectObject(hDC, hPrevBrush);
+	DeleteObject(hpen);
+
+
+
+#ifdef WIN3_1			
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#else
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#endif
+	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
+#ifdef WIN3_1			
+	MoveTo(hDC, rc->left+1, rc->top);
+#else
+	MoveToEx(hDC, rc->left+1, rc->top, NULL);
+#endif
+	LineTo(hDC, rc->right-1, rc->top);
+	SelectObject(hDC, hPrevBrush);
+	DeleteObject(hpen);
+
+#ifdef WIN3_1			
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#else
+	hpen = CreatePen(PS_SOLID, 1, RGB(33, 33, 33));
+#endif
+	hPrevBrush = (HPEN)SelectObject(hDC, hpen);
+#ifdef WIN3_1			
+	MoveTo(hDC, rc->right, rc->top+1);
+#else
+	MoveToEx(hDC, rc->right, rc->top+1, NULL);
+#endif
+	LineTo(hDC, rc->right, rc->bottom);
+	SelectObject(hDC, hPrevBrush);
+	DeleteObject(hpen);
+
+}
+
+void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
+	RECT rcTab;
+
+	int bottom = rc->top + rc->bottom;
+
+	int l = rc->left;
+	int tabSize = 165;
+	rcTab.left = l;
+
+	for (int i = 0; i < 4; i++) {
+		BOOL selected = (i==0);
+		rcTab.top = rc->top;
+		rcTab.right = rcTab.left + tabSize;
+		rcTab.bottom = bottom+1;
+
+		if (! selected) {
+			rcTab.top+=5;
+			//rcTab.bottom-=5;
+		}
+		switch (i) {
+			case 0:
+				drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected);
+				break;
+			case 1:
+				drawTab(hWnd, hDC, &rcTab, "MSN.com", selected);
+				break;
+			case 2:
+				drawTab(hWnd, hDC, &rcTab, "Google", selected);
+				break;
+			case 3:
+				drawTab(hWnd, hDC, &rcTab, "Nintendo", selected);
+				break;
+		}
+		if (! selected) {
+			rcTab.top-=5;
+			//rcTab.bottom+=5;
+		}
+
+		rcTab.left += tabSize + 3;
+	}
+
+	rcTab.top += 4;
+	//rcTab.bottom -= 8;
+	//rcTab.left += tabSize;
+	rcTab.left = rc->right - 36;
+	rcTab.right = rcTab.left + 36 - 1;
+
+	drawTab(hWnd, hDC, &rcTab, " + ", FALSE);
+
+}
+
 LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
 	static HWND hToggleBar;
-	static int padding = 12;
+	static int padding = 6;
 
 	switch (msg) {
-
-
-
 		case WM_CREATE:
 			{
 				RECT rc;
@@ -604,29 +816,108 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 		case WM_PAINT: {
 			PAINTSTRUCT ps;
-			RECT rc;
+			RECT rc, rcTabBar;
 			HDC hDC = BeginPaint(hWnd, &ps);
 			POINT ptStart;
 			POINT ptEnd;
+			HPEN hbr, hPrevBrush;
 #ifdef WIN3_1			
-			HPEN hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
 #else
-			HPEN hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
 #endif
-			HPEN hPrevBrush = (HPEN)SelectObject(hDC, hbr);
+			hPrevBrush = (HPEN)SelectObject(hDC, hbr);
 			GetClientRect(hWnd, &rc);
 			ptStart.x = 0;
 			ptEnd.x = rc.right;
 #ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight+8;
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
-			ptEnd.y = ptStart.y = fontHeight-8+(padding*2);
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2);
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
 			SelectObject(hDC, hPrevBrush);
 			DeleteObject(hbr);
+
+
+#ifdef WIN3_1			
+			hbr = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+#else
+			hbr = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+#endif
+			hPrevBrush = (HPEN)SelectObject(hDC, hbr);
+			GetClientRect(hWnd, &rc);
+			ptStart.x = 0;
+			ptEnd.x = rc.right;
+#ifdef WIN3_1			
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-1;
+			MoveTo(hDC, ptStart.x, ptStart.y);
+#else
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-1;
+			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
+#endif
+			LineTo(hDC, ptEnd.x, ptEnd.y);
+#ifdef WIN3_1			
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			MoveTo(hDC, ptStart.x, ptStart.y);
+#else
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-2;
+			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
+#endif
+			LineTo(hDC, ptEnd.x, ptEnd.y);
+
+
+
+
+
+#ifdef WIN3_1			
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			MoveTo(hDC, ptStart.x, ptStart.y);
+#else
+			ptEnd.y = ptStart.y = 1;
+			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
+#endif
+			LineTo(hDC, ptEnd.x, ptEnd.y);
+#ifdef WIN3_1			
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			MoveTo(hDC, ptStart.x, ptStart.y);
+#else
+			ptEnd.y = ptStart.y = 2;
+			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
+#endif
+			LineTo(hDC, ptEnd.x, ptEnd.y);
+
+			SelectObject(hDC, hPrevBrush);
+			DeleteObject(hbr);
+
+#ifdef WIN3_1			
+			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+#else
+			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+#endif
+#ifdef WIN3_1			
+			ptEnd.y = ptStart.y = fontHeight + fontHeight+8-2;
+			MoveTo(hDC, ptStart.x, ptStart.y);
+#else
+			ptEnd.y = ptStart.y = 0;
+			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
+#endif
+			LineTo(hDC, ptEnd.x, ptEnd.y);
+
+			SelectObject(hDC, hPrevBrush);
+			DeleteObject(hbr);
+			SelectObject(hDC, hPrevBrush);
+			DeleteObject(hbr);
+
+			rcTabBar.left = padding+6;
+			rcTabBar.top = padding+5;
+			rcTabBar.right = rc.right - padding-6;
+			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5;
+
+			drawTabs(hWnd, hDC, &rcTabBar);
+
 			EndPaint(hWnd, &ps);
 			return 0;
 		}	
@@ -662,9 +953,9 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			MoveWindow(hTopBrowserWnd, -1, fontHeight+9, rc.right+1, rc.bottom-fontHeight-fontHeight-9, TRUE);				
 			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
 #else
-	
-			MoveWindow(hAddressBar, padding, padding, rc.right-(padding*2), fontHeight-8, TRUE);
-			int t = fontHeight-8+(padding*2);
+			int t = fontHeight+padding;
+			MoveWindow(hAddressBar, padding, t, rc.right-(padding*2), fontHeight-8, TRUE);
+			t = fontHeight+ fontHeight-8+(padding*2);
 			int h = rc.bottom - t - fontHeight;
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
@@ -809,9 +1100,9 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 #ifdef WIN3_1	
-	wc.hbrBackground = (HBRUSH)CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(235,235,235)); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
 #else
-	wc.hbrBackground = (HBRUSH)CreateHatchBrush(HS_BDIAGONAL, RGB(225,225,225)); //GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(235,235,235)); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
 #endif
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
