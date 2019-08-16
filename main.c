@@ -734,7 +734,7 @@ else SelectObject(hDC, hToggleFont);
 void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 	RECT rcTab;
 
-	#define NUM_TABS 1
+	#define NUM_TABS 4
 
 	int bottom = rc->top + rc->bottom;
 
@@ -742,6 +742,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 	int tabSize = 165;
 	tabSize = (rc->right-50) / (NUM_TABS+1);
 	tabSize = (tabSize > 200) ? 200 : tabSize;
+	tabSize = (tabSize < 15) ? 15 : tabSize;
 	rcTab.left = l;
 
 	for (int i = 0; i < NUM_TABS; i++) {
@@ -749,6 +750,8 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 		rcTab.top = rc->top;
 		rcTab.right = rcTab.left + tabSize;
 		rcTab.bottom = bottom+1;
+
+		if (rcTab.right > rc->right-50)	break;
 
 		if (! selected) {
 			rcTab.top+=5;
@@ -768,7 +771,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 				drawTab(hWnd, hDC, &rcTab, "Nintendo", selected, FALSE);
 				break;
 			default:
-				if (rcTab.right < rc->right-50) drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE);
+				 drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE);
 				break;
 		}
 		if (! selected) {
