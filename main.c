@@ -342,22 +342,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	switch (msg) {
 		case WM_CREATE: {
 			
-#ifndef WIN3_1			
-			if (GetDpiForWindow) {
-				UINT dpi = GetDpiForWindow(hWnd);
-				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
-				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
-				hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
-			}			
-			else {
-				hToggleFont = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
-				hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
-			}
-#else
-			hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-			hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
-#endif
+
 			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
 			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)2, g_hInstance, NULL);
 			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)3, g_hInstance, NULL);
@@ -374,6 +359,23 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			LPDRAWITEMSTRUCT di = (LPDRAWITEMSTRUCT)lParam;
 			HFONT hPrevFont;
 			HBRUSH hbr;
+			
+#ifndef WIN3_1			
+			if (GetDpiForWindow) {
+				UINT dpi = GetDpiForWindow(hWnd);
+				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
+				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
+				hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}			
+			else {
+				hToggleFont = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+				hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
+			}
+#else
+			hToggleFont = CreateFont(16, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+			hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
+#endif			
 		
 			if (wParam == 1) {
 				SetTextColor(di->hDC, RGB(0, 0, 0));
@@ -526,7 +528,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 #ifndef WIN3_1			
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				int fontHeight = (int)(((float)dpi / (float)6.0)); // 1/3.5 inch
+				int fontHeight = (int)(((float)dpi / (float)5.0)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 				if (! hFont) hFont = CreateFont(fontHeight, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 			}			
@@ -613,7 +615,7 @@ void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL sp
 #ifndef WIN3_1			
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				int fontHeight = (int)(((float)dpi / (float)7.5)); // 1/3.5 inch
+				int fontHeight = (int)(((float)dpi / (float)5.5)); // 1/3.5 inch
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
 				if (! hToggleFont) hToggleFont = CreateFont(fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				if (! hToggleFontBold) hToggleFontBold = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
@@ -764,6 +766,9 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 			rcTab.top-=5;
 		}
 #endif
+
+		//rcTab.bottom = (rc->top + rc->bottom) - rcTab.top;
+
 		switch (i) {
 			case 0:
 				drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE);
@@ -855,7 +860,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-1;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2);
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2);
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
@@ -876,7 +881,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-2;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-1;
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-1;
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
@@ -884,7 +889,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-3;
 			MoveTo(hDC, ptStart.x, ptStart.y);
 #else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight-8+(padding*2)-2;
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-2;
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
 #endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
@@ -948,12 +953,12 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #ifndef WIN3_1				
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
-				fontHeight = (int)(((float)dpi / (float)3)); // 1/3.5 inch
+				fontHeight = (int)(((float)dpi / (float)3.5)); // 1/3.5 inch
 				if (hAddrBarFont) {
 					DeleteObject(hAddrBarFont);
 				}
 				//fontheight = -MulDiv(PointSize, GetDeviceCaps(hDC, LOGPIXELSY), 72);
-				hAddrBarFont = CreateFont(fontHeight-12, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				hAddrBarFont = CreateFont(fontHeight-2, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
 				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
 				DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"));
 				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
@@ -974,8 +979,8 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			}
 #else
 			int t = fontHeight+padding;
-			MoveWindow(hAddressBar, padding, t, rc.right-(padding*2), fontHeight-8, TRUE);
-			t = fontHeight+ fontHeight-8+(padding*2);
+			MoveWindow(hAddressBar, padding, t, rc.right-(padding*2), fontHeight, TRUE);
+			t = fontHeight+ fontHeight+(padding*2);
 			int h = rc.bottom - t - fontHeight;
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
@@ -1073,7 +1078,7 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 		};
 		lpSetProcessDpiAwareness SetProcessDpiAwareness = (lpSetProcessDpiAwareness)GetProcAddress(hShCore, "SetProcessDpiAwareness");
 		if (SetProcessDpiAwareness) {
-			SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);	
+			SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);	
 		}
 	}
 #endif
