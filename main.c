@@ -306,6 +306,10 @@ static FARPROC oldAddressBarProc;
 static WNDPROC oldAddressBarProc;
 #endif
 
+COLORREF GetTabColor(BOOL selected, BOOL special) {
+	return (selected ? RGB(222, 50, 50) : (special ? RGB(72, 42, 42) : RGB(112, 82, 82)));
+}
+
 LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 		case WM_LBUTTONDOWN:
@@ -600,10 +604,6 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
-COLORREF GetTabColor(BOOL selected, BOOL special) {
-	return (selected ? RGB(222, 50, 50) : (special ? RGB(44, 44, 44) : RGB(82, 82, 82)));
-}
-
 void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL special) {
 	HPEN hpen;
 	HPEN hPrevBrush;
@@ -808,7 +808,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
 	static HWND hToggleBar;
-	static int padding = 6;
+	static int padding = 12;
 
 	switch (msg) {
 		case WM_CREATE:
@@ -817,9 +817,9 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 				GetClientRect(hWnd, &rc);
 #ifdef WIN3_1
-				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+				hAddressBar = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #else	
-				hAddressBar = CreateWindowEx(0, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
+				hAddressBar = CreateWindowEx(0, "EDIT", "", WS_CHILD | WS_VISIBLE, -1, 0, rc.right+2, fontHeight, hWnd, NULL, g_hInstance, NULL);			
 #endif
 
 				hStatusBar = hToggleBar = CreateWindow("VOYAGER_SHELL_TOGGLEBAR", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, 1, 1, hWnd, NULL, g_hInstance, NULL);
@@ -938,11 +938,42 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			DeleteObject(hbr);
 
 			rcTabBar.left = padding+6;
+#ifdef WIN3_1			
+			rcTabBar.top = padding+3;
+#else
 			rcTabBar.top = padding+5;
+#endif
 			rcTabBar.right = rc.right - padding-6;
 			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5;
 
 			drawTabs(hWnd, hDC, &rcTabBar);
+			
+			{
+				HBRUSH hFrame;
+				RECT rcAddrBar;
+				hFrame = CreateSolidBrush(GetTabColor(TRUE, FALSE));
+
+#ifdef WIN3_1
+				rcAddrBar.left = 4;
+				rcAddrBar.right = rcAddrBar.left + rc.right-8;
+				rcAddrBar.top = fontHeight+4;
+				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
+#else			
+				rcAddrBar.left = padding;
+				rcAddrBar.right = rcAddrBar.left + rc.right-(padding*2);
+				rcAddrBar.top = fontHeight+padding;
+				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
+#endif
+				
+				FillRect(hDC, &rcAddrBar, hFrame);
+				rcAddrBar.left+=1;
+				rcAddrBar.top+=1;
+				rcAddrBar.right-=1;
+				rcAddrBar.bottom-=1;
+				FillRect(hDC, &rcAddrBar, GetStockObject(WHITE_BRUSH));
+			
+				DeleteObject(hFrame);
+			}			
 
 			EndPaint(hWnd, &ps);
 			return 0;
@@ -971,16 +1002,16 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			GetClientRect(hWnd, &rc);
 #ifdef WIN3_1
 			{	
-			int t = fontHeight+4;
-			MoveWindow(hAddressBar, 4, t, rc.right-8, fontHeight, TRUE);
+			int t = fontHeight+5;
+			MoveWindow(hAddressBar, 6, t+4, rc.right-12, fontHeight-4, TRUE);
 			t += fontHeight;
 			MoveWindow(hTopBrowserWnd, -1, t+9, rc.right+1, rc.bottom-fontHeight-t-9, TRUE);				
 			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
 			}
 #else
-			int t = fontHeight+padding;
-			MoveWindow(hAddressBar, padding, t, rc.right-(padding*2), fontHeight, TRUE);
-			t = fontHeight+ fontHeight+(padding*2);
+			int t = fontHeight+padding+1;
+			MoveWindow(hAddressBar, padding+1, t+2, rc.right-(padding*2)-2, fontHeight-2, TRUE);
+			t = fontHeight+ fontHeight+1+(padding*2);
 			int h = rc.bottom - t - fontHeight;
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
