@@ -650,11 +650,19 @@ else SelectObject(hDC, hToggleFont);
 					rc->top += 2;
 					rc->left += 2;
 					rc->top += 2;
-					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+#ifdef WIN3_1
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+#else
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+#endif
 					SetTextColor(hDC, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
 					rc->left -= 2;
 					rc->top -= 2;
-					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+#ifdef WIN3_1
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+#else
+					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+#endif
 					rc->left -= 2;
 					rc->top -= 2;
 
@@ -872,9 +880,9 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			POINT ptEnd;
 			HPEN hbr, hPrevBrush;
 #ifdef WIN3_1			
-			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+			hbr = CreatePen(PS_SOLID, 1, RGB(60, 60, 60));
 #else
-			hbr = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+			hbr = CreatePen(PS_SOLID, 1, RGB(60, 60, 60));
 #endif
 			hPrevBrush = (HPEN)SelectObject(hDC, hbr);
 			GetClientRect(hWnd, &rc);
@@ -1041,7 +1049,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #else
 			MoveWindow(hAddressBar, padding+3, t+2, rc.right-(padding*2)-6, fontHeight-2, TRUE);
 #endif
-			t = fontHeight+ fontHeight+1+(padding*2)+tabpadding;
+			t = fontHeight+ fontHeight+1+(padding*2)+tabpadding-1;
 			h = rc.bottom - t - fontHeight;
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
