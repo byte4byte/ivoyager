@@ -307,7 +307,11 @@ static WNDPROC oldAddressBarProc;
 #endif
 
 COLORREF GetTabColor(BOOL selected, BOOL special) {
-	return (selected ? RGB(222, 50, 50) : (special ? RGB(72, 42, 42) : RGB(112, 82, 82)));
+	return (selected ? RGB(182, 82, 72) : (special ? RGB(0, 0, 0) : RGB(42, 42, 72)));
+}
+
+COLORREF GetWinColor() {
+	return RGB(237, 235, 235);
 }
 
 LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -389,13 +393,13 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			else {
 				SetTextColor(di->hDC, RGB(33, 33, 33));
 				hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFont);
-#ifdef WIN3_1			
-				hbr = CreateSolidBrush(RGB(225, 225, 225));
+//#ifdef WIN3_1			
+				hbr = CreateSolidBrush(GetWinColor());
 				FillRect(di->hDC, &di->rcItem, hbr);
 				DeleteObject(hbr);
-#else
-				FillRect(di->hDC, &di->rcItem, (HBRUSH)COLOR_WINDOW);
-#endif
+//#else
+				//FillRect(di->hDC, &di->rcItem, (HBRUSH)COLOR_WINDOW);
+//#endif
 			}
 			
 			{
@@ -644,11 +648,15 @@ else SelectObject(hDC, hToggleFont);
 					SetTextColor(hDC, selected ? RGB(0, 0, 0) : RGB(0, 0, 0));
 					rc->left += 2;
 					rc->top += 2;
+					rc->left += 2;
+					rc->top += 2;
 					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
 					SetTextColor(hDC, selected ? RGB(255, 255, 255) : RGB(255, 255, 255));
 					rc->left -= 2;
 					rc->top -= 2;
 					DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+					rc->left -= 2;
+					rc->top -= 2;
 
 	DeleteObject(hbr);
 
@@ -758,14 +766,17 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 		if (rcTab.right > rc->right-50)	break;
 		
 #ifdef WIN3_1
-	rcTab.top -= 5;
+//	rcTab.top -= 5;
 #endif		
 
-#ifndef WIN3_1
-		if (selected) {
-			rcTab.top-=5;
+//#ifndef WIN3_1
+		if (! selected) {
+			//rcTab.top-=5;
 		}
-#endif
+		else {
+			rcTab.top-=4;
+		}
+//#endif
 
 		//rcTab.bottom = (rc->top + rc->bottom) - rcTab.top;
 
@@ -786,11 +797,18 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 				 drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE);
 				break;
 		}
-#ifndef WIN3_1
-		if (selected) {			
-			rcTab.top+=5;
+//#ifndef WIN3_1
+		if (! selected) {			
+			//rcTab.top+=5;
 		}
-#endif
+		else {
+			rcTab.top+=4;
+		}
+//#endif
+
+#ifdef WIN3_1
+	//rcTab.top += 5;
+#endif	
 
 		rcTab.left += tabSize + 3;
 	}
@@ -798,6 +816,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc) {
 	//rcTab.top += 5;
 	//rcTab.left = rc->right - 36;
 	//rcTab.left += 6;
+	//rcTab.top-=4;
 	rcTab.right = rcTab.left + 44 - 1;
 
 	drawTab(hWnd, hDC, &rcTab, " + ", FALSE, TRUE);
@@ -808,7 +827,12 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	static int fontHeight = DEF_FONT_HEIGHT;
 	static HFONT hAddrBarFont = NULL;
 	static HWND hToggleBar;
+	static int tabpadding = 5;
+#ifdef WIN3_1	
+	static int padding = 8;
+#else
 	static int padding = 12;
+#endif
 
 	switch (msg) {
 		case WM_CREATE:
@@ -856,13 +880,13 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			GetClientRect(hWnd, &rc);
 			ptStart.x = 0;
 			ptEnd.x = rc.right;
-#ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-1;
-			MoveTo(hDC, ptStart.x, ptStart.y);
-#else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2);
+//#ifdef WIN3_1			
+//			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-1;
+//			MoveTo(hDC, ptStart.x, ptStart.y);
+//#else
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)+tabpadding;
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
-#endif
+//#endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
 			SelectObject(hDC, hPrevBrush);
 			DeleteObject(hbr);
@@ -877,21 +901,21 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			GetClientRect(hWnd, &rc);
 			ptStart.x = 0;
 			ptEnd.x = rc.right;
-#ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-2;
-			MoveTo(hDC, ptStart.x, ptStart.y);
-#else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-1;
+//#ifdef WIN3_1			
+//			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-2;
+//			MoveTo(hDC, ptStart.x, ptStart.y);
+//#else
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-1+tabpadding;
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
-#endif
+//#endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
-#ifdef WIN3_1			
-			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-3;
-			MoveTo(hDC, ptStart.x, ptStart.y);
-#else
-			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-2;
+//#ifdef WIN3_1			
+//			ptEnd.y = ptStart.y = fontHeight + fontHeight+4+9-3;
+//			MoveTo(hDC, ptStart.x, ptStart.y);
+//#else
+			ptEnd.y = ptStart.y = fontHeight+ fontHeight+(padding*2)-2+tabpadding;
 			MoveToEx(hDC, ptStart.x, ptStart.y, NULL);
-#endif
+//#endif
 			LineTo(hDC, ptEnd.x, ptEnd.y);
 
 
@@ -938,32 +962,32 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			DeleteObject(hbr);
 
 			rcTabBar.left = padding+6;
-#ifdef WIN3_1			
-			rcTabBar.top = padding+3;
-#else
+//#ifdef WIN3_1			
+//			rcTabBar.top = padding+3;
+//#else
 			rcTabBar.top = padding+5;
-#endif
+//#endif
 			rcTabBar.right = rc.right - padding-6;
-			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5;
+			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5 + tabpadding;
 
 			drawTabs(hWnd, hDC, &rcTabBar);
 			
 			{
 				HBRUSH hFrame;
 				RECT rcAddrBar;
-				hFrame = CreateSolidBrush(GetTabColor(TRUE, FALSE));
+				hFrame = CreateSolidBrush(RGB(0,0,0)/*GetTabColor(TRUE, FALSE)*/);
 
-#ifdef WIN3_1
+/*#ifdef WIN3_1
 				rcAddrBar.left = 4;
 				rcAddrBar.right = rcAddrBar.left + rc.right-8;
 				rcAddrBar.top = fontHeight+4;
 				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
-#else			
+#else			*/
 				rcAddrBar.left = padding;
 				rcAddrBar.right = rcAddrBar.left + rc.right-(padding*2);
-				rcAddrBar.top = fontHeight+padding;
+				rcAddrBar.top = fontHeight+padding+tabpadding;
 				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
-#endif
+//#endif
 				
 				FillRect(hDC, &rcAddrBar, hFrame);
 				rcAddrBar.left+=1;
@@ -1000,7 +1024,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			}
 #endif			
 			GetClientRect(hWnd, &rc);
-#ifdef WIN3_1
+/*#ifdef WIN3_1
 			{	
 			int t = fontHeight+5;
 			MoveWindow(hAddressBar, 6, t+4, rc.right-12, fontHeight-4, TRUE);
@@ -1008,11 +1032,17 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			MoveWindow(hTopBrowserWnd, -1, t+9, rc.right+1, rc.bottom-fontHeight-t-9, TRUE);				
 			MoveWindow(hToggleBar, -1, rc.bottom-fontHeight, rc.right+2, fontHeight+2, TRUE);
 			}
+#else*/
+{
+			int t, h;
+			t = fontHeight+padding+1+tabpadding;
+#ifdef WIN3_1			
+			MoveWindow(hAddressBar, padding+3, t+5, rc.right-(padding*2)-6, fontHeight-5, TRUE);
 #else
-			int t = fontHeight+padding+1;
-			MoveWindow(hAddressBar, padding+1, t+2, rc.right-(padding*2)-2, fontHeight-2, TRUE);
-			t = fontHeight+ fontHeight+1+(padding*2);
-			int h = rc.bottom - t - fontHeight;
+			MoveWindow(hAddressBar, padding+3, t+2, rc.right-(padding*2)-6, fontHeight-2, TRUE);
+#endif
+			t = fontHeight+ fontHeight+1+(padding*2)+tabpadding;
+			h = rc.bottom - t - fontHeight;
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
 			t++;
@@ -1022,7 +1052,8 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			h = fontHeight + 2;
 			
 			MoveWindow(hToggleBar, -1, t, rc.right+2, h, TRUE);
-#endif
+}
+//#endif
 
 			return 0;
 		}
@@ -1156,9 +1187,9 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 #ifdef WIN3_1	
-	wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(235,235,235)); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(GetWinColor()); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
 #else
-	wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(235,235,235)); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(GetWinColor()); //CreateHatchBrush(HS_BDIAGONAL, RGB(235,235,235)); //GetStockObject(WHITE_BRUSH);
 #endif
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
@@ -1172,9 +1203,9 @@ HMODULE hShCore = LoadLibrary("shcore.dll");
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 #ifdef WIN3_1	
-	wc.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(225, 225, 225)); //GetStockObject(LTGRAY_BRUSH);
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(GetWinColor()); //GetStockObject(LTGRAY_BRUSH);
 #else
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.hbrBackground = (HBRUSH)CreateSolidBrush(GetWinColor()); //COLOR_WINDOW;
 #endif
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = icon;
