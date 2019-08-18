@@ -308,7 +308,7 @@ static WNDPROC oldAddressBarProc;
 #endif
 
 COLORREF GetTabColor(BOOL selected, BOOL special, BOOL over) {
-	if (over) return selected ? RGB(162, 62, 52) : RGB(72, 82, 192);
+	if (over) return selected ? RGB(162, 62, 52) : RGB(22, 22, 192);
 	return (selected ? RGB(182, 82, 72) : (special ? RGB(0, 0, 0) : RGB(62, 62, 62)));
 }
 
@@ -614,12 +614,16 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	return (DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
-void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL special, BOOL mouseover) {
+void drawTab(HWND hWnd, HDC hDC, LPRECT rc, LPSTR szText, BOOL selected, BOOL special, BOOL mouseover, BOOL overx) {
 	HPEN hpen;
 	HPEN hPrevBrush;
 	static HFONT hToggleFontBold = NULL;
 	static HFONT hToggleFont = NULL;
-	HBRUSH hbr = CreateSolidBrush(GetTabColor(selected, special, mouseover));
+	HBRUSH hbr;
+	
+	if (overx) mouseover = FALSE;
+
+		hbr = CreateSolidBrush(GetTabColor(selected, special, mouseover));
 
 
 #ifndef WIN3_1			
@@ -673,6 +677,41 @@ else SelectObject(hDC, hToggleFont);
 #endif
 					rc->left -= 2;
 					rc->top -= 2;
+					
+if (! special) {
+
+						SetTextColor(hDC, selected ? RGB(0, 0, 0) : RGB(100, 100, 255));
+					rc->right -= 8;
+					rc->left += 2;
+					rc->top += 2;
+					rc->left += 2;
+					rc->top += 2;
+					if (selected) {
+#ifdef WIN3_1
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+#else
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+#endif
+					}
+					if (overx) {
+						SetBkColor(hDC, RGB(255, 255, 255));
+						SetBkMode(hDC, OPAQUE);
+						SetTextColor(hDC, (selected || special) ? RGB(255, 0, 0) : RGB(255, 0, 0));
+						
+					}
+					else SetTextColor(hDC, (selected || special)? RGB(255, 255, 255) : RGB(255, 255, 255));
+					rc->left -= 2;
+					rc->top -= 2;
+#ifdef WIN3_1
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+#else
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+#endif
+					SetBkMode(hDC, TRANSPARENT);
+					rc->left -= 2;
+					rc->top -= 2;
+					rc->right += 8;
+}	
 
 	DeleteObject(hbr);
 
@@ -753,13 +792,19 @@ BOOL OverTab(const RECT *lprc, POINT pt)
 	return pt.x >= lprc->left && pt.y >= lprc->top && pt.x <= lprc->right && pt.y <= lprc->bottom;
 }
 
+#define TAB_X_SIZE 35
+
+BOOL OverTabX(const RECT *lprc, POINT pt)
+{
+	return pt.x >= (lprc->right-TAB_X_SIZE) && pt.y >= lprc->top && pt.x <= lprc->right && pt.y <= lprc->bottom;
+}
+
 static int g_selectedTab = 1;
+static int g_numTabs = 1;
 
-void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int *overtab) {
+void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int *overtab, BOOL *overx) {
 	RECT rcTab;
-
-	#define NUM_TABS 4
-
+	
 	int bottom = rc->top + rc->bottom;
 
 	int l = rc->left;
@@ -767,19 +812,25 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	int i;
 	
 	if (overtab) *overtab = -1;
+	if (overx) *overx = FALSE;
 	
-	tabSize = (rc->right-50) / (NUM_TABS+1);
-	tabSize = (tabSize > 230) ? 230 : tabSize;
-	tabSize = (tabSize < 15) ? 15 : tabSize;
+	#define FULL_TAB_SIZE 230
+
+	
+	tabSize = (rc->right-50-FULL_TAB_SIZE) / (g_numTabs);
+	tabSize = (tabSize > FULL_TAB_SIZE) ? FULL_TAB_SIZE : tabSize;
+	tabSize = (tabSize < 15+TAB_X_SIZE) ? 15+TAB_X_SIZE : tabSize;
 	rcTab.left = l;
 
-	for (i = 0; i < NUM_TABS; i++) {
+	for (i = 0; i < g_numTabs; i++) {
+		int ts = tabSize;
 		BOOL selected = (i+1==g_selectedTab);
+		if (selected) ts = FULL_TAB_SIZE;
 		rcTab.top = rc->top;
-		rcTab.right = rcTab.left + tabSize;
+		rcTab.right = rcTab.left + ts;
 		rcTab.bottom = bottom+1;
 
-		if (rcTab.right > rc->right-50)	break;
+		if (rcTab.right > rc->right-50-FULL_TAB_SIZE && ! selected)	continue;
 		
 #ifdef WIN3_1
 //	rcTab.top -= 5;
@@ -795,24 +846,16 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 //#endif
 
 		if (overtab && OverTab(&rcTab, *mousecoords)) *overtab = (i+1);
+		if (overx && OverTabX(&rcTab, *mousecoords)) *overx = TRUE;
 
 		//rcTab.bottom = (rc->top + rc->bottom) - rcTab.top;
 
 		switch (i) {
 			case 0:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE, OverTab(&rcTab, *mousecoords));
-				break;
-			case 1:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "MSN.com", selected, FALSE, OverTab(&rcTab, *mousecoords));
-				break;
-			case 2:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "Google", selected, FALSE, OverTab(&rcTab, *mousecoords));
-				break;
-			case 3:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "Nintendo", selected, FALSE, OverTab(&rcTab, *mousecoords));
+				if (draw) drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
 				break;
 			default:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE, OverTab(&rcTab, *mousecoords));
+				if (draw) drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
 				break;
 		}
 //#ifndef WIN3_1
@@ -828,7 +871,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	//rcTab.top += 5;
 #endif	
 
-		rcTab.left += tabSize + 3;
+		rcTab.left += ts + 3;
 	}
 
 	//rcTab.top += 5;
@@ -839,7 +882,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	
 	if (overtab && OverTab(&rcTab, *mousecoords)) *overtab = 0;
 
-	if (draw) drawTab(hWnd, hDC, &rcTab, "+", FALSE, TRUE, OverTab(&rcTab, *mousecoords));
+	if (draw) drawTab(hWnd, hDC, &rcTab, "+", FALSE, TRUE, OverTab(&rcTab, *mousecoords), FALSE);
 
 }
 
@@ -855,6 +898,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif
 	static POINT mousecoords = { -1, -1 };
 	static int overtab = -1;
+	static BOOL overx = FALSE;
 
 	switch (msg) {
 		case WM_CREATE:
@@ -992,7 +1036,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			rcTabBar.right = rc.right - padding-6;
 			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5 + tabpadding;
 
-			drawTabs(hWnd, hDC, &rcTabBar, &mousecoords, TRUE, NULL);
+			drawTabs(hWnd, hDC, &rcTabBar, &mousecoords, TRUE, NULL, NULL);
 			
 			{
 				HBRUSH hFrame;
@@ -1027,6 +1071,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 		case WM_LBUTTONDOWN: {
 			int currtab;
 			RECT rcTabBar, rc;
+			BOOL curroverx;
 			
 #ifdef WIN3_1			
 			mousecoords = MAKEPOINT(lParam);
@@ -1041,10 +1086,26 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			rcTabBar.top = padding+5;
 			rcTabBar.right = rc.right - padding-6;
 			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5 + tabpadding;			
-			drawTabs(hWnd, NULL, &rcTabBar, &mousecoords, FALSE, &currtab);
+			drawTabs(hWnd, NULL, &rcTabBar, &mousecoords, FALSE, &currtab, &curroverx);
 			
-			if (currtab != g_selectedTab && currtab > 0) {
-				g_selectedTab = currtab;
+			if ((currtab != g_selectedTab || curroverx) && currtab > 0) {
+				if (curroverx) {
+					if (g_selectedTab > currtab) g_selectedTab--;
+					if (g_selectedTab <= 0) g_selectedTab = 1;
+					//DebugLog("removetab \r\n");
+					g_numTabs--;
+					if (g_numTabs <= 0) DestroyWindow(GetParent(hWnd));
+				}
+				else {
+					g_selectedTab = currtab;
+				}
+				overtab = -1;
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+			else if (currtab == 0) {
+				//DebugLog("addtab \r\n");
+				g_numTabs++;
+				g_selectedTab = g_numTabs;
 				overtab = -1;
 				InvalidateRect(hWnd, NULL, TRUE);
 			}
@@ -1055,6 +1116,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			
 			int currtab;
 			RECT rcTabBar, rc;
+			BOOL curroverx;
 			
 #ifdef WIN3_1			
 			mousecoords = MAKEPOINT(lParam);
@@ -1069,14 +1131,16 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			rcTabBar.top = padding+5;
 			rcTabBar.right = rc.right - padding-6;
 			rcTabBar.bottom = padding + fontHeight - padding - 1 - 5 + tabpadding;			
-			drawTabs(hWnd, NULL, &rcTabBar, &mousecoords, FALSE, &currtab);
+			drawTabs(hWnd, NULL, &rcTabBar, &mousecoords, FALSE, &currtab, &curroverx);
 			
-			if (currtab != overtab) {
+			if (currtab != overtab || curroverx != overx) {
 				overtab = currtab;
+				overx = curroverx;
 				InvalidateRect(hWnd, NULL, FALSE);
 			}
+
 #ifndef WIN3_1
-			if (overtab >= 0) {
+			if (overtab >= 0 || curroverx) {
 				SetCursor(LoadCursor(NULL, IDC_HAND));
 			}
 			else {
