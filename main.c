@@ -439,6 +439,8 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			MoveToEx(di->hDC, 0, 0, NULL);
 #endif
 			LineTo(di->hDC, 0, di->rcItem.bottom-0);
+			SelectObject(di->hDC, hPrevBrush);
+			DeleteObject(hbr);
 
 #ifdef WIN3_1			
 			hbr = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
@@ -482,6 +484,9 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 					break;					
 			}
 			SelectObject(di->hDC, hPrevFont);
+			
+			DeleteObject(hToggleFont);
+			DeleteObject(hToggleFontBold);
 			return TRUE;
 		}
 		case WM_SIZE: {
@@ -1024,8 +1029,6 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 			SelectObject(hDC, hPrevBrush);
 			DeleteObject(hbr);
-			SelectObject(hDC, hPrevBrush);
-			DeleteObject(hbr);
 
 			rcTabBar.left = padding+6;
 //#ifdef WIN3_1			
@@ -1094,6 +1097,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 					if (g_selectedTab <= 0) g_selectedTab = 1;
 					//DebugLog("removetab \r\n");
 					g_numTabs--;
+					if (g_selectedTab > g_numTabs) g_selectedTab = g_numTabs;
 					if (g_numTabs <= 0) DestroyWindow(GetParent(hWnd));
 				}
 				else {
