@@ -797,7 +797,7 @@ BOOL OverTab(const RECT *lprc, POINT pt)
 	return pt.x >= lprc->left && pt.y >= lprc->top && pt.x <= lprc->right && pt.y <= lprc->bottom;
 }
 
-#define TAB_X_SIZE 35
+#define TAB_X_SIZE 25
 
 BOOL OverTabX(const RECT *lprc, POINT pt)
 {
@@ -815,16 +815,19 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	int l = rc->left;
 	int tabSize = 165;
 	int i;
+	BOOL drawnSelected = FALSE;
 	
 	if (overtab) *overtab = -1;
 	if (overx) *overx = FALSE;
 	
 	#define FULL_TAB_SIZE 230
 
-	
-	tabSize = (rc->right-50-FULL_TAB_SIZE) / (g_numTabs);
-	tabSize = (tabSize > FULL_TAB_SIZE) ? FULL_TAB_SIZE : tabSize;
-	tabSize = (tabSize < 15+TAB_X_SIZE) ? 15+TAB_X_SIZE : tabSize;
+	if (g_numTabs-1 > 0) {
+		tabSize = (rc->right-l-45-FULL_TAB_SIZE) / (g_numTabs-1);
+		tabSize -= 3;
+		tabSize = (tabSize > FULL_TAB_SIZE) ? FULL_TAB_SIZE : tabSize;
+		tabSize = (tabSize < 15+TAB_X_SIZE) ? 15+TAB_X_SIZE : tabSize;
+	}
 	rcTab.left = l;
 
 	for (i = 0; i < g_numTabs; i++) {
@@ -835,7 +838,10 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 		rcTab.right = rcTab.left + ts;
 		rcTab.bottom = bottom+1;
 
-		if (rcTab.right > rc->right-50-FULL_TAB_SIZE && ! selected)	continue;
+		if (! drawnSelected && rcTab.right-l > rc->right-45-FULL_TAB_SIZE && ! selected)	continue;
+		else if (drawnSelected && rcTab.right-l > rc->right-45 && ! selected)	continue;
+		
+		if (selected) drawnSelected = TRUE;
 		
 #ifdef WIN3_1
 //	rcTab.top -= 5;
