@@ -426,6 +426,40 @@ BOOL  RemoveCustomTaskListData(Task far *task, DWORD id, int idx) {
 	return TRUE;
 }
 
+int  GetCustomTaskListIdxByData(Task  far *task, DWORD id, LPARAM data) {
+	TaskData far *start;
+
+	int ret = 0;
+
+#ifndef NOTHREADS
+	EnterCriticalSection(&task->cs);
+#endif
+
+	if (! GetCustomTaskVar(task, id, (LPVOID )&start, NULL)) {
+#ifndef NOTHREADS
+		LeaveCriticalSection(&task->cs);
+#endif
+		return FALSE;
+	}
+
+	while (start) {
+		if (start->data == data) {
+#ifndef NOTHREADS
+			LeaveCriticalSection(&task->cs);
+#endif
+			return ret;
+		}
+
+		ret++;
+		start = start->next;
+	}
+
+#ifndef NOTHREADS
+	LeaveCriticalSection(&task->cs);
+#endif
+	return -1;
+}
+
 BOOL  GetCustomTaskListDataByPtrField(Task  far *task, DWORD id, char far *val, int ptrOffset, int numbytes, LPARAM  far *out) {
 	TaskData far *start;
 

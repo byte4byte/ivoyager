@@ -7,6 +7,29 @@ static FARPROC oldAddressBarProc;
 static WNDPROC oldAddressBarProc;
 #endif
 
+BOOL CreateTabChildWindows(HWND parent, HWND *hPage, HWND *hSource, HWND *hConsole) {
+	*hSource = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+	if (! *hSource) {
+		*hSource = CreateWindow("EDIT", "", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+	}
+	return TRUE;
+}
+
+BOOL SetActiveTab(Tab far *tab) {
+	Tab far *currTab = TabFromId(g_currTabId);
+	//RECT rc;
+	HWND shell;
+	if (currTab) {
+		ShowWindow(currTab->hSource, SW_HIDE);
+	}
+	ShowWindow(tab->hSource, SW_SHOW);
+	g_currTabId = tab->id;
+	shell = GetParent(tab->hSource);
+	SendMessage(shell, WM_SIZE, 0, 0L);
+	//GetWindowRect(shell, &rc);
+	//SetWindowPos(shell, NULL, 0, 0, rc.right-rc.left, rc.bottom-rc.top, SWP_NOZORDER);
+}
+
 COLORREF GetTabColor(BOOL selected, BOOL special, BOOL over) {
 	if (over) return selected ? RGB(162, 62, 52) : RGB(22, 22, 192);
 	return (selected ? RGB(182, 82, 72) : (special ? RGB(0, 0, 0) : RGB(62, 62, 62)));
@@ -625,6 +648,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	switch (msg) {
 		case WM_CREATE:
 			{
+				HWND hSource, hPage, hConsole;
 				RECT rc;
 				Tab far *tab;
 
@@ -637,10 +661,10 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 
 				hStatusBar = hToggleBar = CreateWindow("VOYAGER_SHELL_TOGGLEBAR", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, 1, 1, hWnd, NULL, g_hInstance, NULL);
 
-				hTopBrowserWnd = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
-				if (! hTopBrowserWnd) {
-					hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
-				}
+				//hTopBrowserWnd = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				//if (! hTopBrowserWnd) {
+				//	hTopBrowserWnd = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, fontHeight, rc.right, rc.bottom-fontHeight, hWnd, NULL, g_hInstance, NULL);
+				//}
 				//SendMessage(hTopBrowserWnd, EM_SETBKGNDCOLOR, 0, RGB( 0,0,0 ) );
 				//g_TOP_WINDOW.hWnd = hTopBrowserWnd;
 
@@ -651,8 +675,10 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				oldAddressBarProc = (WNDPROC)SetWindowLongPtr(hAddressBar, GWLP_WNDPROC, (LONG_PTR)AddressBarProc);
 #endif
 				g_currTabId = genTabId();
-				tab =AllocTab(g_currTabId);
-				tab->hSource = hTopBrowserWnd;
+				tab = AllocTab(g_currTabId);
+				CreateTabChildWindows(hWnd, &hPage, &hSource, &hConsole);
+				tab->hSource = hSource;
+				SetActiveTab(tab);
 				OpenUrl(tab, &tab->TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
 			}
@@ -808,7 +834,18 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			
 			if ((currtab != g_selectedTab || curroverx) && currtab > 0) {
 				if (curroverx) {
-					if (g_selectedTab > currtab) g_selectedTab--;
+					//char buff[50];
+					Tab far *tab = TabFromIdx(currtab-1);
+					//wsprintf(buff, "%d", currtab);
+					//MessageBox(hWnd, buff, "", MB_OK);
+					if (tab) {
+						g_currTabId = -1;
+						DestroyWindow(tab->hSource);
+						FreeTab(tab);
+					}
+					if (g_selectedTab > currtab) {
+						g_selectedTab--;
+					}
 					if (g_selectedTab <= 0) g_selectedTab = 1;
 					//DebugLog("removetab \r\n");
 					g_numTabs--;
@@ -818,11 +855,22 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				else {
 					g_selectedTab = currtab;
 				}
+				if (g_numTabs > 0) {
+					Tab far *tab = TabFromIdx(g_selectedTab-1);
+					if (tab) SetActiveTab(tab);
+				}
 				overtab = -1;
 				InvalidateRect(hWnd, NULL, TRUE);
 			}
 			else if (currtab == 0) {
 				//DebugLog("addtab \r\n");
+				Tab far *tab;
+				HWND hPage, hConsole, hSource;
+				tab = AllocTab(genTabId());
+				CreateTabChildWindows(hWnd, &hPage, &hSource, &hConsole);
+				tab->hSource = hSource;
+				SetActiveTab(tab);
+
 				g_numTabs++;
 				g_selectedTab = g_numTabs;
 				overtab = -1;
@@ -871,6 +919,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 		case WM_MOVE:
 		case WM_SIZE: {
 			RECT rc;
+			Tab far *currTab = TabFromId(g_currTabId);
 #ifndef WIN3_1				
 			if (GetDpiForWindow) {
 				UINT dpi = GetDpiForWindow(hWnd);
@@ -912,7 +961,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 //			MoveWindow(hTopBrowserWnd, 4, fontHeight, rc.right-8, rc.bottom-fontHeight-fontHeight-4, TRUE);					
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
 			t++;
-			MoveWindow(hTopBrowserWnd, 0, t, rc.right, h, TRUE);		
+			MoveWindow(currTab->hSource, 0, t, rc.right, h, TRUE);		
 
 			t += h;
 			h = fontHeight + 2;

@@ -19,6 +19,16 @@ Tab far *AllocTab(long id) {
 	return tab;
 }
 
+BOOL FreeTab(Tab far *tab) {
+	int idx = GetCustomTaskListIdxByData(g_tabTask, VAR_TABS, (LPARAM)tab);
+	if (idx >= 0) {
+		RemoveCustomTaskListData(g_tabTask, VAR_TABS, idx);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 Tab far *TabFromIdx(int idx) {
 	LPARAM ret;
 	GetCustomTaskListData(g_tabTask, VAR_TABS, idx, &ret);
