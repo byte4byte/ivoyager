@@ -549,6 +549,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	int tabSize = 165;
 	int i;
 	BOOL drawnSelected = FALSE;
+	BOOL suboveradd;
 	
 	if (overtab) *overtab = -1;
 	if (overx) *overx = FALSE;
@@ -566,6 +567,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 
 	for (i = 0; i < g_numTabs; i++) {
 		int ts = tabSize;
+		BOOL subover = FALSE;
 		BOOL selected = (i+1==g_selectedTab);
 		if (selected) ts = FULL_TAB_SIZE;
 		rcTab.top = rc->top;
@@ -583,7 +585,9 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 
 //#ifndef WIN3_1
 		if (! selected) {
-			//rcTab.top-=5;
+			rcTab.top -= 4;
+			if (! OverTab(&rcTab, *mousecoords)) rcTab.top+=4;
+			else subover = TRUE;
 		}
 		else {
 			rcTab.top-=4;
@@ -604,10 +608,10 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 				break;
 		}
 //#ifndef WIN3_1
-		if (! selected) {			
-			//rcTab.top+=5;
+		if (subover) {			
+			rcTab.top+=4;
 		}
-		else {
+		else if (selected) {
 			rcTab.top+=4;
 		}
 //#endif
@@ -625,9 +629,24 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	//rcTab.top-=4;
 	rcTab.right = rcTab.left + 44 - 1;
 	
-	if (overtab && OverTab(&rcTab, *mousecoords)) *overtab = 0;
-
+	
+	suboveradd = FALSE;
+	rcTab.top -= 4;
+	if (overtab && OverTab(&rcTab, *mousecoords)) {
+		*overtab = 0;
+		suboveradd = TRUE;
+	}
+	else if (! overtab && OverTab(&rcTab, *mousecoords)) {
+		suboveradd = TRUE;
+	}
+	else {
+		rcTab.top += 4;
+		suboveradd = FALSE;
+	}
+	
 	if (draw) drawTab(hWnd, hDC, &rcTab, "+", FALSE, TRUE, OverTab(&rcTab, *mousecoords), FALSE);
+
+	if (suboveradd) rcTab.top += 4;
 
 }
 
@@ -903,7 +922,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			if (currtab != overtab || curroverx != overx) {
 				overtab = currtab;
 				overx = curroverx;
-				InvalidateRect(hWnd, NULL, FALSE);
+				InvalidateRect(hWnd, NULL, TRUE);
 			}
 
 #ifndef WIN3_1
