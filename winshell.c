@@ -401,13 +401,13 @@ if (! special && (mouseover||overx)) {
 					rc->top += 2;
 					rc->left += 2;
 					rc->top += 2;
-					if (selected) {
+					//if (selected) {
 #ifdef WIN3_1
 					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
 #else
-					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
 #endif
-					}
+					//}
 					if (overx) {
 						SetBkColor(hDC, RGB(255, 255, 255));
 						SetBkMode(hDC, OPAQUE);
@@ -420,7 +420,7 @@ if (! special && (mouseover||overx)) {
 #ifdef WIN3_1
 					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
 #else
-					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+					DrawText(hDC, " X ", 3, rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
 #endif
 					SetBkMode(hDC, TRANSPARENT);
 					rc->left -= 2;
@@ -577,7 +577,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 				if (draw) drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
 				break;
 			default:
-				if (draw) drawTab(hWnd, hDC, &rcTab, "Tab", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
+				if (draw) drawTab(hWnd, hDC, &rcTab, "New Tab", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
 				break;
 		}
 //#ifndef WIN3_1
@@ -768,17 +768,10 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				RECT rcAddrBar;
 				hFrame = CreateSolidBrush(RGB(0,0,0)/*GetTabColor(TRUE, FALSE)*/);
 
-/*#ifdef WIN3_1
-				rcAddrBar.left = 4;
-				rcAddrBar.right = rcAddrBar.left + rc.right-8;
-				rcAddrBar.top = fontHeight+4;
-				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
-#else			*/
 				rcAddrBar.left = padding;
 				rcAddrBar.right = rcAddrBar.left + rc.right-(padding*2);
 				rcAddrBar.top = fontHeight+padding+tabpadding;
 				rcAddrBar.bottom = rcAddrBar.top + fontHeight+2;
-//#endif
 				
 				FillRect(hDC, &rcAddrBar, hFrame);
 				rcAddrBar.left+=1;
