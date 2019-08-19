@@ -1060,7 +1060,7 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 
 BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_ATTRIB, ptr);
-	if (! IsWhitespace(fullptr)) {
+	if (window && ! IsWhitespace(fullptr)) {
 		DebugLog(window->tab, " ");
 		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,138,0));
 		DebugLog(window->tab, "%s", fullptr);
@@ -1074,7 +1074,7 @@ BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) 
 
 BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_VALUE, ptr);
-	if (! IsWhitespace(fullptr)) {
+	if (window && ! IsWhitespace(fullptr)) {
 		DebugLog(window->tab, "=\"");
 		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,138));
 		DebugLog(window->tab, "%s", fullptr);
@@ -1091,10 +1091,11 @@ BOOL TextParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	///*if (! IsWhitespace(ptr)) */MessageBox(window->hWnd, ptr, "text", MB_OK);
 
 	//DebugLog("\"%s\" - Text parsed", ptr);
-
-	DebugLogAttr(window->tab, FALSE, TRUE, RGB(0,0,0));
-	DebugLog(window->tab, "%s", ptr);
-	ResetDebugLogAttr(window->tab);
+	if (window) {
+		DebugLogAttr(window->tab, FALSE, TRUE, RGB(0,0,0));
+		DebugLog(window->tab, "%s", ptr);
+		ResetDebugLogAttr(window->tab);
+	}
 	
 	return TRUE;
 }
@@ -1110,14 +1111,16 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 		if (tag) {
 			if (! _fstricmp(tag, "/style")) {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)TRUE);
-				DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
-				DebugLog(window->tab, "\r\n<");
-				DebugLogAttr(window->tab, TRUE, TRUE, RGB(138,0,0));
-				DebugLog(window->tab, "/style");
-				
-				DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
-				DebugLog(window->tab, ">");
-				ResetDebugLogAttr(window->tab);
+				if (window) {
+					DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+					DebugLog(window->tab, "\r\n<");
+					DebugLogAttr(window->tab, TRUE, TRUE, RGB(138,0,0));
+					DebugLog(window->tab, "/style");
+					
+					DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+					DebugLog(window->tab, ">");
+					ResetDebugLogAttr(window->tab);
+				}
 			}
 			else {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)FALSE);
@@ -1130,14 +1133,14 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 		return FALSE;
 	}
 	if (tag) {
-		
-		DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
-		if (autoclose) DebugLog(window->tab, " />");
-		else DebugLog(window->tab, ">");
-		ResetDebugLogAttr(window->tab);
-		
+		if (window) {
+			DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+			if (autoclose) DebugLog(window->tab, " />");
+			else DebugLog(window->tab, ">");
+			ResetDebugLogAttr(window->tab);
+		}
 		if (! _fstricmp(tag, "style")) {
-			DebugLog(window->tab, "\r\n");
+			if (window) DebugLog(window->tab, "\r\n");
 			*state = PARSE_STATE_CSS_CODE;
 			AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
 		}
