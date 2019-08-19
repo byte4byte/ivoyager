@@ -1,5 +1,4 @@
 #include "ivoyager.h"
-#include "dom.h"
 #include "utils.c"
 #include <ctype.h>
 
@@ -150,9 +149,9 @@ BOOL bLastProperty = FALSE;
 
 BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
 	//bLastBlockParams = bLastSelector = FALSE;
-	DebugLogAttr(TRUE, FALSE, RGB(0,0,0));	
-	DebugLog(" {\r\n");
-	ResetDebugLogAttr();
+	DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));	
+	DebugLog(window->tab, " {\r\n");
+	ResetDebugLogAttr(window->tab);
 	return TRUE;
 }
 
@@ -164,10 +163,10 @@ BOOL CSSCloseBracket(ContentWindow far *window, Task far *task) {
 
 	if (inSelector) inSelector = FALSE;
 	else if (inBlock) inBlock = FALSE;
-	DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
-	if (inBlock) DebugLog("\t}\r\n");
-	else DebugLog("}\r\n");
-	ResetDebugLogAttr();
+	DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+	if (inBlock) DebugLog(window->tab, "\t}\r\n");
+	else DebugLog(window->tab, "}\r\n");
+	ResetDebugLogAttr(window->tab);
 	return TRUE;
 }
 
@@ -178,13 +177,13 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	if (! IsWhitespace(fullptr)) {
 		fullptr = Trim(fullptr, TRUE, TRUE);
 		inSelector = TRUE;
-		if (bLastSelector == TRUE) DebugLog(", ");
-		else if (! bLastBlockParams) DebugLog("\r\n");
-		if (inBlock && ! bLastSelector) DebugLog("\t");
+		if (bLastSelector == TRUE) DebugLog(window->tab, ", ");
+		else if (! bLastBlockParams) DebugLog(window->tab, "\r\n");
+		if (inBlock && ! bLastSelector) DebugLog(window->tab, "\t");
 
-		DebugLogAttr(TRUE, FALSE, RGB(0,0,255));
-		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
-		ResetDebugLogAttr();
+		DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,255));
+		DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
+		ResetDebugLogAttr(window->tab);
 
 		bLastSelector = TRUE;
 		bLastProperty = FALSE;
@@ -208,10 +207,10 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
 		bLastBlockParams = bLastSelector = FALSE;
-		DebugLogAttr(FALSE, FALSE, RGB(66, 66, 66));
-		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
-		ResetDebugLogAttr();
-		DebugLog(";\r\n");
+		DebugLogAttr(window->tab, FALSE, FALSE, RGB(66, 66, 66));
+		DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
+		ResetDebugLogAttr(window->tab);
+		DebugLog(window->tab, ";\r\n");
 		bLastProperty = FALSE;
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSSValue", MB_OK);
 	}
@@ -229,11 +228,11 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {	
 		bLastBlockParams = bLastSelector = FALSE;
-		DebugLog("\r\n");
-		DebugLogAttr(TRUE, FALSE, RGB(0,0,100));
-		DebugLog("@%s", Trim(fullptr, TRUE, TRUE));
-		ResetDebugLogAttr();
-		DebugLog(" ");
+		DebugLog(window->tab, "\r\n");
+		DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,100));
+		DebugLog(window->tab, "@%s", Trim(fullptr, TRUE, TRUE));
+		ResetDebugLogAttr(window->tab);
+		DebugLog(window->tab, " ");
 		bLastProperty = FALSE;
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Type", MB_OK);
 	}
@@ -256,12 +255,12 @@ BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {	
 		inBlock = TRUE;
-		if (bLastBlockParams == TRUE) DebugLog(",");
-		DebugLog(" ");
-		DebugLogAttr(FALSE, FALSE, RGB(0,0,145));
-		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
-		ResetDebugLogAttr();
-		DebugLog(" ");
+		if (bLastBlockParams == TRUE) DebugLog(window->tab, ",");
+		DebugLog(window->tab, " ");
+		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,145));
+		DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
+		ResetDebugLogAttr(window->tab);
+		DebugLog(window->tab, " ");
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Params", MB_OK);
 		bLastBlockParams = TRUE;
 		bLastProperty = FALSE;
@@ -279,14 +278,14 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	
 	StripCSSComment(fullptr, bInComment);
 	if (! IsWhitespace(fullptr)) {
-		if (bLastProperty) DebugLog("\r\n");
-		if (inBlock) DebugLog("\t\t");
-		else DebugLog("\t");
+		if (bLastProperty) DebugLog(window->tab, "\r\n");
+		if (inBlock) DebugLog(window->tab, "\t\t");
+		else DebugLog(window->tab, "\t");
 		//MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Property", MB_OK);
-		DebugLogAttr(TRUE, FALSE, RGB(122,0,0));
-		DebugLog("%s", Trim(fullptr, TRUE, TRUE));
-		ResetDebugLogAttr();
-		DebugLog(": ");
+		DebugLogAttr(window->tab, TRUE, FALSE, RGB(122,0,0));
+		DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
+		ResetDebugLogAttr(window->tab);
+		DebugLog(window->tab, ": ");
 		bLastProperty = TRUE;
 	}
 	
@@ -1046,11 +1045,11 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	if (prevtag) GlobalFree((HGLOBAL)prevtag);
 	
 	if (window && ! IsWhitespace(fullptr)) {
-		DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
-		DebugLog("<");
-		DebugLogAttr(TRUE, fullptr[0] == '/' ? TRUE : FALSE, RGB(138,0,0));
-		DebugLog("%s", fullptr);
-		ResetDebugLogAttr();
+		DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+		DebugLog(window->tab, "<");
+		DebugLogAttr(window->tab, TRUE, fullptr[0] == '/' ? TRUE : FALSE, RGB(138,0,0));
+		DebugLog(window->tab, "%s", fullptr);
+		ResetDebugLogAttr(window->tab);
 	}
 	
 	AddCustomTaskVar(task, PARSE_DOM_CURR_TAG, (LPARAM)NULL);
@@ -1062,10 +1061,10 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_ATTRIB, ptr);
 	if (! IsWhitespace(fullptr)) {
-		DebugLog(" ");
-		DebugLogAttr(FALSE, FALSE, RGB(0,138,0));
-		DebugLog("%s", fullptr);
-		ResetDebugLogAttr();
+		DebugLog(window->tab, " ");
+		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,138,0));
+		DebugLog(window->tab, "%s", fullptr);
+		ResetDebugLogAttr(window->tab);
 	}
 	GlobalFree((HGLOBAL)fullptr);
 	
@@ -1076,11 +1075,11 @@ BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) 
 BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_VALUE, ptr);
 	if (! IsWhitespace(fullptr)) {
-		DebugLog("=\"");
-		DebugLogAttr(FALSE, FALSE, RGB(0,0,138));
-		DebugLog("%s", fullptr);
-		ResetDebugLogAttr();
-		DebugLog("\"");
+		DebugLog(window->tab, "=\"");
+		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,138));
+		DebugLog(window->tab, "%s", fullptr);
+		ResetDebugLogAttr(window->tab);
+		DebugLog(window->tab, "\"");
 	}
 	GlobalFree((HGLOBAL)fullptr);
 	
@@ -1093,9 +1092,9 @@ BOOL TextParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 
 	//DebugLog("\"%s\" - Text parsed", ptr);
 
-	DebugLogAttr(FALSE, TRUE, RGB(0,0,0));
-	DebugLog("%s", ptr);
-	ResetDebugLogAttr();
+	DebugLogAttr(window->tab, FALSE, TRUE, RGB(0,0,0));
+	DebugLog(window->tab, "%s", ptr);
+	ResetDebugLogAttr(window->tab);
 	
 	return TRUE;
 }
@@ -1111,14 +1110,14 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 		if (tag) {
 			if (! _fstricmp(tag, "/style")) {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)TRUE);
-				DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
-				DebugLog("\r\n<");
-				DebugLogAttr(TRUE, TRUE, RGB(138,0,0));
-				DebugLog("/style");
+				DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+				DebugLog(window->tab, "\r\n<");
+				DebugLogAttr(window->tab, TRUE, TRUE, RGB(138,0,0));
+				DebugLog(window->tab, "/style");
 				
-				DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
-				DebugLog(">");
-				ResetDebugLogAttr();
+				DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+				DebugLog(window->tab, ">");
+				ResetDebugLogAttr(window->tab);
 			}
 			else {
 				AddCustomTaskVar(task, PARSE_CSS_FOUND_END_TASK, (LPARAM)FALSE);
@@ -1132,13 +1131,13 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 	}
 	if (tag) {
 		
-		DebugLogAttr(TRUE, FALSE, RGB(0,0,0));
-		if (autoclose) DebugLog(" />");
-		else DebugLog(">");
-		ResetDebugLogAttr();
+		DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
+		if (autoclose) DebugLog(window->tab, " />");
+		else DebugLog(window->tab, ">");
+		ResetDebugLogAttr(window->tab);
 		
 		if (! _fstricmp(tag, "style")) {
-			DebugLog("\r\n");
+			DebugLog(window->tab, "\r\n");
 			*state = PARSE_STATE_CSS_CODE;
 			AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
 		}

@@ -1,8 +1,6 @@
 #ifndef _DOM_H
 #define _DOM_H
 
-#include "task.h"
-
 typedef int CSSPropType;
 typedef int CSSUnit;
 
@@ -68,13 +66,14 @@ typedef struct AllCSSProps {
 	CSSProp zoom;
 } AllCSSProps;
 
+
 typedef struct DomNode DomNode;
-typedef struct ContentWindow ContentWindow;
 typedef struct ContentWindow {
 	HWND hWnd;
 	RECT rcClient;
 	DomNode far *document;
 	ContentWindow *parent;
+	Tab far *tab;
 	// Parsed CSS
 } ContentWindow;
 
@@ -104,6 +103,6 @@ typedef struct DomNode {
 	//calc on read: innerText: "hi"
 } DomNode;
 
-BOOL  ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL end);
+BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL end);
 
 #endif

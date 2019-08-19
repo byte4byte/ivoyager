@@ -22,7 +22,6 @@ typedef struct TaskData { // important "data" and "next" come first as list allo
 	BYTE type;
 } TaskData;
 
-typedef struct Task Task;
 typedef struct Task {
 	int type;
 	DWORD totalTime;
@@ -55,6 +54,7 @@ BOOL  RemoveAllCustomTaskData(Task far *task);
 
 // arraylist var functions
 BOOL  GetCustomTaskListData(Task far *task, DWORD id, int idx, LPARAM  far *out);
+BOOL  GetCustomTaskListDataByPtrField(Task  far *task, DWORD id, char far *val, int ptrOffset, int numbytes, LPARAM  far *out);
 BOOL  RemoveCustomTaskListData(Task far *task, DWORD id, int idx);
 int  AddCustomTaskListData(Task far *task, DWORD id, LPARAM data);
 int  GetNumCustomTaskListData(Task far *task, DWORD id);

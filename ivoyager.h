@@ -24,11 +24,12 @@
 #define TEST_PATH_NORMAL
 #define DEBUG_TASK_DATA_FUNCS
 
-void DebugLog(LPSTR format, ...);
-void DebugLogAttr(BOOL bold, BOOL italic, COLORREF color);
-void ResetDebugLogAttr();
+typedef struct Tab Tab;
+typedef struct ContentWindow ContentWindow;
+typedef struct Task Task;
 
 #include "dom.h"
 #include "task.h"
+#include "tabs.h"
 
 #endif
