@@ -77,6 +77,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 			switch (url_info->protocol) {
 				case HTTP_PROTOCOL: 
 				{
+					SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->domain);
 					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Connecting to: \"%s\"", url_info->domain);
 					ret = TRUE;
 					break;
@@ -86,6 +87,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 					FILE *fp;
 					//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
 					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Opening: \"%s\"", url_info->path);
+					SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->path);
 					fp = _ffopen(url_info->path, "rb");
 					if (! fp) { // 404
 						//MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);

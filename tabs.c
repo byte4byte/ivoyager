@@ -35,6 +35,7 @@ BOOL SetTabTitle(Tab far *tab, LPSTR lpStr) {
 	if (tab->szTitle) GlobalFree((HGLOBAL)tab->szTitle);
 	tab->szTitle = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(lpStr)+1);
 	lstrcpy(tab->szTitle, lpStr);
+	InvalidateRect(g_innerShell, NULL, TRUE);
 	return TRUE;
 }
 

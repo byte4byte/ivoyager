@@ -1,3 +1,5 @@
+HWND g_innerShell;
+
 
 #include "tabs.c"
 
@@ -1036,7 +1038,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 			
 			//if (TabFromId(g_currTabId)) MessageBox(hWnd, "found tab", "", MB_OK);
 
-			innerShell = CreateWindow("VOYAGER_INNERSHELL", "",  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_BORDER, 0, 0, rc.right, rc.bottom, hWnd, NULL, g_hInstance, NULL);
+			g_innerShell = innerShell = CreateWindow("VOYAGER_INNERSHELL", "",  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_BORDER, 0, 0, rc.right, rc.bottom, hWnd, NULL, g_hInstance, NULL);
 
 			return 0;
 		}
