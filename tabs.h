@@ -14,6 +14,7 @@ typedef struct Tab {
 	HWND hConsole;
 	int view;
 	LPSTR szStatus;
+	LPSTR szUrl;
 } Tab;
 
 Tab far *AllocTab(long id);

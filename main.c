@@ -73,7 +73,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 				ret = TRUE;
 				break;
 			}
-			SetWindowText(hTopBrowserWnd, "");
+			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hSource, "");
 			switch (url_info->protocol) {
 				case HTTP_PROTOCOL: 
 				{
@@ -201,6 +201,8 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, LPSTR  url) {
 	loadUrlTask->params = (LPVOID)params;
 
 	AddTask(loadUrlTask);
+
+	SetTabURL(tab, url);
 	
 	#include "tests/taskdata.c"
 }

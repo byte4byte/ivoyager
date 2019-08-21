@@ -16,6 +16,8 @@ Tab far *AllocTab(long id) {
 	tab->TOP_WINDOW.tab = tab;
 	AddCustomTaskListData(g_tabTask, VAR_TABS, (LPARAM)tab);
 	SetStatusText(tab, "Ready...");
+	SetTabTitle(tab, "New Tab");
+	SetTabURL(tab, "");
 	return tab;
 }
 
@@ -27,6 +29,31 @@ BOOL FreeTab(Tab far *tab) {
 	}
 
 	return FALSE;
+}
+
+BOOL SetTabTitle(Tab far *tab, LPSTR lpStr) {
+	if (tab->szTitle) GlobalFree((HGLOBAL)tab->szTitle);
+	tab->szTitle = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(lpStr)+1);
+	lstrcpy(tab->szTitle, lpStr);
+	return TRUE;
+}
+
+BOOL SetTabStatus(Tab far *tab, LPSTR szStatus) {
+	if (tab->szStatus) GlobalFree((HGLOBAL)tab->szStatus);
+	tab->szStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(szStatus)+1);
+	lstrcpy(tab->szStatus, szStatus);
+	return TRUE;
+}
+
+BOOL SetTabURL(Tab far *tab, LPSTR szUrl) {
+	if (tab->szUrl) GlobalFree((HGLOBAL)tab->szUrl);
+	tab->szUrl = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(szUrl)+1);
+	lstrcpy(tab->szUrl, szUrl);
+	return TRUE;
+}
+
+int GetNumTabs() {
+	return GetNumCustomTaskListData(g_tabTask, VAR_TABS);
 }
 
 Tab far *TabFromIdx(int idx) {
@@ -130,6 +157,8 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
 	lpszStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, len * sizeof(char) );
 
 	wvsprintf( lpszStatus, format, args ); // C4996
+
+	SetTabStatus(tab, lpszStatus);
 
 	va_end(args);	
 	

@@ -20,12 +20,29 @@ BOOL SetActiveTab(Tab far *tab) {
 	//RECT rc;
 	HWND shell;
 	if (currTab) {
+		int len = GetWindowTextLength(hAddressBar);
+		LPSTR buff;
+		len++;
+		buff = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
+		buff[len] = '\0';
+		GetWindowText(hAddressBar, buff, len);
+		SetTabURL(currTab, buff);
+		GlobalFree((HGLOBAL)buff);
 		ShowWindow(currTab->hSource, SW_HIDE);
 	}
 	ShowWindow(tab->hSource, SW_SHOW);
 	g_currTabId = tab->id;
 	shell = GetParent(tab->hSource);
 	SendMessage(shell, WM_SIZE, 0, 0L);
+
+
+	if (lpszStatus) GlobalFree((HGLOBAL)lpszStatus);
+	lpszStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(tab->szStatus)+1);
+	lstrcpy(lpszStatus, tab->szStatus);
+	if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
+
+	SetWindowText(hAddressBar, tab->szUrl);
+
 	//GetWindowRect(shell, &rc);
 	//SetWindowPos(shell, NULL, 0, 0, rc.right-rc.left, rc.bottom-rc.top, SWP_NOZORDER);
 }
@@ -548,6 +565,8 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	
 	int bottom = rc->top + rc->bottom;
 
+	int numTabs = GetNumTabs();
+
 	int l = rc->left;
 	int tabSize = 165;
 	int i;
@@ -559,8 +578,8 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	
 	#define FULL_TAB_SIZE 230
 
-	if (g_numTabs-1 > 0) {
-		tabSize = (rc->right-l-45-FULL_TAB_SIZE) / (g_numTabs-1);
+	if (numTabs-1 > 0) {
+		tabSize = (rc->right-l-45-FULL_TAB_SIZE) / (numTabs-1);
 		//tabSize = tabSize + ((5-(tabSize % 5)) % 5);
 		tabSize -= 3;
 		tabSize = (tabSize > FULL_TAB_SIZE) ? FULL_TAB_SIZE : tabSize;
@@ -568,7 +587,8 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 	}
 	rcTab.left = l;
 
-	for (i = 0; i < g_numTabs; i++) {
+	for (i = 0; i < numTabs; i++) {
+		Tab far *tab = TabFromIdx(i);
 		int ts = tabSize;
 		BOOL subover = FALSE;
 		BOOL selected = (i+1==g_selectedTab);
@@ -602,6 +622,9 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 
 		//rcTab.bottom = (rc->top + rc->bottom) - rcTab.top;
 
+
+		if (draw) drawTab(hWnd, hDC, &rcTab, tab->szTitle, selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
+#if 0
 		switch (i) {
 			case 0:
 				if (draw) drawTab(hWnd, hDC, &rcTab, "Internet Voyager", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
@@ -610,6 +633,7 @@ void drawTabs(HWND hWnd, HDC hDC, LPRECT rc, LPPOINT mousecoords, BOOL draw, int
 				if (draw) drawTab(hWnd, hDC, &rcTab, "New Tab", selected, FALSE, OverTab(&rcTab, *mousecoords), OverTabX(&rcTab, *mousecoords));
 				break;
 		}
+#endif
 //#ifndef WIN3_1
 		if (subover) {			
 			rcTab.top+=4;
