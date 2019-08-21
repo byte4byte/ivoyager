@@ -7,10 +7,10 @@ static FARPROC oldAddressBarProc;
 static WNDPROC oldAddressBarProc;
 #endif
 
-BOOL CreateTabChildWindows(HWND parent, HWND *hPage, HWND *hSource, HWND *hConsole) {
-	*hSource = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
-	if (! *hSource) {
-		*hSource = CreateWindow("EDIT", "", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+BOOL CreateTabChildWindows(HWND parent, Tab far *tab) {
+	tab->hSource = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+	if (! tab->hSource) {
+		tab->hSource = CreateWindow("EDIT", "", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
 	}
 	return TRUE;
 }
@@ -36,7 +36,10 @@ COLORREF GetTabColor(BOOL selected, BOOL special, BOOL over) {
 }
 
 COLORREF GetTabShineColor(BOOL selected, BOOL special, BOOL over) {
-	return (selected ? RGB(255, 245, 245) : (special ? RGB(255, 255, 255) : RGB(255, 255, 255)));
+	int inc = 30;
+	//return (selected ? RGB(255, 245, 245) : (special ? RGB(255, 255, 255) : RGB(255, 255, 255)));
+	if (over) return selected ? RGB(162+inc, 62+inc, 52+inc) : RGB(22+inc, 22+inc, 192+inc);
+	return (selected ? RGB(182+inc, 82+inc, 72+inc) : (special ? RGB(0+inc, 0+inc, 0+inc) : RGB(62+inc, 62+inc, 62+inc)));
 }
 
 COLORREF GetWinColor() {
@@ -667,7 +670,6 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	switch (msg) {
 		case WM_CREATE:
 			{
-				HWND hSource, hPage, hConsole;
 				RECT rc;
 				Tab far *tab;
 
@@ -695,8 +697,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 #endif
 				g_currTabId = genTabId();
 				tab = AllocTab(g_currTabId);
-				CreateTabChildWindows(hWnd, &hPage, &hSource, &hConsole);
-				tab->hSource = hSource;
+				CreateTabChildWindows(hWnd, tab);
 				SetActiveTab(tab);
 				OpenUrl(tab, &tab->TOP_WINDOW, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
@@ -884,10 +885,8 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			else if (currtab == 0) {
 				//DebugLog("addtab \r\n");
 				Tab far *tab;
-				HWND hPage, hConsole, hSource;
 				tab = AllocTab(genTabId());
-				CreateTabChildWindows(hWnd, &hPage, &hSource, &hConsole);
-				tab->hSource = hSource;
+				CreateTabChildWindows(hWnd, tab);
 				SetActiveTab(tab);
 
 				g_numTabs++;
@@ -922,7 +921,10 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			if (currtab != overtab || curroverx != overx) {
 				overtab = currtab;
 				overx = curroverx;
-				InvalidateRect(hWnd, NULL, TRUE);
+				rcTabBar.top -= 4;
+				rcTabBar.right += rcTabBar.left;
+				rcTabBar.bottom += rcTabBar.top + 5;
+				InvalidateRect(hWnd, &rcTabBar, TRUE);
 			}
 
 #ifndef WIN3_1
