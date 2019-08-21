@@ -28,8 +28,8 @@ typedef struct Tab Tab;
 typedef struct ContentWindow ContentWindow;
 typedef struct Task Task;
 
-#include "dom.h"
 #include "task.h"
+#include "dom.h"
 #include "tabs.h"
 
 #endif

@@ -1,9 +1,5 @@
 #include "ivoyager.h"
-#include "utils.c"
-#include "task.h"
-#include "url.c"
-#include "tabs.h"
-#include "dom.h"
+
 #include <stdio.h>
 #ifdef WIN3_1
 #include <wing.h>
@@ -15,9 +11,14 @@
 #include <richedit.h>
 #endif
 
+static Task far *g_tabTask = NULL, *g_socketsTask = NULL;
+
+#include "utils.c"
+#include "url.c"
+#include "http.c"
+
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
-static Task far *g_tabTask = NULL;;
 
 static LPSTR g_szDefURL = "ivoyager.online";
 
@@ -313,6 +314,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	RegisterClass(&wc);
 	
 	g_tabTask = AllocTempTask();
+	g_socketsTask = AllocTempTask();
 
 	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_THICKFRAME | WS_OVERLAPPEDWINDOW  | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	UpdateWindow(browserWin);

@@ -66,6 +66,7 @@ typedef struct AllCSSProps {
 	CSSProp zoom;
 } AllCSSProps;
 
+#define NUM_CONCURRENT_REQUESTS 6
 
 typedef struct DomNode DomNode;
 typedef struct ContentWindow {
@@ -74,7 +75,8 @@ typedef struct ContentWindow {
 	DomNode far *document;
 	ContentWindow *parent;
 	Tab far *tab;
-	// Parsed CSS
+	Task far *activeRequests[NUM_CONCURRENT_REQUESTS];
+	Task far *queuedRequests;
 } ContentWindow;
 
 typedef struct NodeList {
