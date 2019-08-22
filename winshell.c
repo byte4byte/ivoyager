@@ -1094,7 +1094,11 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			int t, h;
 			t = fontHeight+padding+1+tabpadding;
 #ifdef WIN3_1			
-			MoveWindow(hAddressBar, padding+3, t+5, rc.right-(padding*2)-6, fontHeight-5, TRUE);
+{
+			RECT rcBar;
+			GetClientRect(hAddressBar, &rcBar);
+			MoveWindow(hAddressBar, padding+3, t+1+((fontHeight)/2-(rcBar.bottom/2)), rc.right-(padding*2)-6, rcBar.bottom-1, TRUE);
+}
 #else
 			MoveWindow(hAddressBar, padding+3, t+2, rc.right-(padding*2)-6, fontHeight-2, TRUE);
 #endif
