@@ -174,7 +174,7 @@ LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 				url[len] = '\0';
 				GetWindowText(hWnd, url, len+1);
 				tab = TabFromId(g_currTabId);
-				OpenUrl(tab, &tab->TOP_WINDOW, url);
+				OpenUrl(tab, &tab->TOP_WINDOW, tab->TOP_WINDOW.document, url);
 				GlobalFree((HGLOBAL)url);
 				return FALSE;
 			}
@@ -820,7 +820,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				tab = AllocTab(g_currTabId);
 				CreateTabChildWindows(hWnd, tab);
 				SetActiveTab(tab);
-				OpenUrl(tab, &tab->TOP_WINDOW, g_szDefURL);
+				OpenUrl(tab, &tab->TOP_WINDOW, tab->TOP_WINDOW.document, g_szDefURL);
 				SetWindowText(hAddressBar, (LPCSTR)g_szDefURL);
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -1153,6 +1153,8 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             case FD_CONNECT:
                  //G_con = 1;
 				 // todo: set status on task to success
+				 HttpGet((Stream_HTTP far *)ss->stream);
+				 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_SUCCESS);
                  SetStatusText(ss->stream->window->tab, "Connection successful");
                  return 0;
 
@@ -1164,7 +1166,12 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  send(G_s, (char far *)G_out, len, SO_DONTROUTE);*/
                  return 0;
 
-            case FD_READ:
+            case FD_READ: {
+				char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, 1024);
+				int ret = recv(ss->s, buff, 1022, 0);
+				buff[ret] = '\0';
+				DebugLog(ss->stream->window->tab, "%s", buff);
+				GlobalFree((HGLOBAL)buff);
                  /*if (!G_con) return NULL;
                  MSG("Receiving data...")
                  ret = recv(G_s, (char far *)G_query, QUERYLEN, 0);
@@ -1172,7 +1179,9 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                       WSAGetLastError()!=WSAEWOULDBLOCK ) CANCEL
                  G_query[ret] = 0;
                  PostMessage(hWnd,WM_QUERYDONE,0,0);*/
+
                  return 0;
+			}
 
             case FD_CLOSE:
                  SetStatusText(ss->stream->window->tab, "Connection closed");
@@ -1190,6 +1199,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 			if (WSAGETASYNCERROR(lParam)) {
 				if (ss) {
 					// todo: set status on task to failed
+					AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);
 					SetStatusText(ss->stream->window->tab, "Unable to resolve");
 				}
 				//MessageBox(hWnd, "Unable to resolve", "", MB_OK);
@@ -1211,6 +1221,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 				ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
 				if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
 					// todo: set status on task to failed
+					AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);
 					SetStatusText(ss->stream->window->tab, "Connect failed");
 					return 0;
 				}

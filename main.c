@@ -60,9 +60,14 @@ BOOL RunOpenUrlTask(Task far *task) {
 	LPARAM state;
 	Stream far *stream;
 		
-	#define RUN_TASK_VAR_STATE   0
-	#define RUN_TASK_VAR_DATA  	 1
-	#define RUN_TASK_VAR_CHUNKS  2
+	#define RUN_TASK_VAR_STATE   		0
+	#define RUN_TASK_VAR_DATA  	 		1
+	#define RUN_TASK_VAR_CHUNKS  		2
+	#define RUN_TASK_VAR_CONNECT_STATE	3
+	
+	#define CONNECT_STATE_CONNECTING	0
+	#define CONNECT_STATE_ERROR			1
+	#define	CONNECT_STATE_SUCCESS		2
 	
 	#define RUN_TASK_STATE_OPEN_STREAM 0
 	#define RUN_TASK_STATE_READ_STREAM 1
@@ -81,7 +86,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 			}
 			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hSource, "");
 			
-			stream = openStream(((DownloadFileTaskParams far *)task->params)->window, url_info);
+			stream = openStream(task, ((DownloadFileTaskParams far *)task->params)->window, url_info);
 			if (! stream) {
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "\"%s\" - 404 Error", url_info->path);
 				ret = TRUE;
@@ -131,7 +136,23 @@ BOOL RunOpenUrlTask(Task far *task) {
 			}
 			break;
 		}
-		case RUN_TASK_STATE_CONNECTING: // todo fill out case
+		case RUN_TASK_STATE_CONNECTING:
+		{
+			LPARAM connect_state;
+			GetCustomTaskVar(task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
+			if (connect_state == CONNECT_STATE_CONNECTING) {
+				// check time limit here
+				break;
+			}
+			else if (connect_state == CONNECT_STATE_ERROR) {
+				ret = TRUE;
+				break;
+			}
+			else if (connect_state == CONNECT_STATE_SUCCESS) {
+				// let fall into read stream
+				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
+			}
+		}
 		case RUN_TASK_STATE_READ_STREAM:
 		{
 			int addidx;
@@ -206,7 +227,7 @@ BOOL  RunTask(Task far *task) {
 	return ret;
 }
 
-void OpenUrl(Tab far *tab, ContentWindow far *window, LPSTR  url) {
+void OpenUrl(Tab far *tab, ContentWindow far *window, DomNode *element, LPSTR  url) {
 	// TODO: Clear out window
 
 	DownloadFileTaskParams far *params;

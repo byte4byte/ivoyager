@@ -19,6 +19,7 @@ typedef struct Stream {
 	stream_eof eof;
 	stream_close close;
 	ContentWindow far *window;
+	Task far *task;
 } Stream;
 
 typedef struct SocketStream {
@@ -36,6 +37,7 @@ typedef struct Stream_FILE {
 typedef struct Stream_HTTP {
 	Stream stream; // must come first
 	SOCKET s;
+	URL_INFO far *url_info;
 } Stream_HTTP;
 
 int far readStream_FILE(Stream far *stream, char near *buff, int len) {
@@ -62,7 +64,7 @@ BOOL far closeStream_HTTP(Stream far *stream) {
 	return TRUE;
 }
 
-Stream far *openStream(ContentWindow far *window, URL_INFO far *url_info) {
+Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *url_info) {
 	switch (url_info->protocol) {
 		case HTTP_PROTOCOL: 
 		{
@@ -78,6 +80,8 @@ Stream far *openStream(ContentWindow far *window, URL_INFO far *url_info) {
 			ret->stream.eof = EOFstream_HTTP;
 			ret->stream.close = closeStream_HTTP;
 			ret->stream.window = window;
+			ret->stream.task = task;
+			ret->url_info = url_info;
 			
 			ss = (SocketStream far *)GlobalAlloc(GMEM_FIXED, sizeof(SocketStream));
 			ss->s = ret->s;
@@ -107,6 +111,7 @@ Stream far *openStream(ContentWindow far *window, URL_INFO far *url_info) {
 			ret->stream.eof = EOFstream_FILE;
 			ret->stream.close = closeStream_FILE;
 			ret->stream.window = window;
+			ret->stream.task = task;
 			return (Stream far *)ret;
 		}		
 	}
