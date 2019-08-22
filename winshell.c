@@ -1148,6 +1148,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             {
             case FD_CONNECT:
                  //G_con = 1;
+				 // todo: set status on task to success
                  SetStatusText(ss->stream->window->tab, "Connection successful");
                  return 0;
 
@@ -1184,6 +1185,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 			ss = (SocketStream far *)ret;
 			if (WSAGETASYNCERROR(lParam)) {
 				if (ss) {
+					// todo: set status on task to failed
 					SetStatusText(ss->stream->window->tab, "Unable to resolve");
 				}
 				//MessageBox(hWnd, "Unable to resolve", "", MB_OK);
@@ -1195,7 +1197,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 				struct hostent far *remote_host;
 				struct sockaddr_in remote_addr;
 				SetStatusText(ss->stream->window->tab, "Host Resolved");
-				remote_host = (struct hostent *)ss->getHostBuf;
+				remote_host = (struct hostent far *)ss->getHostBuf;
 				remote_addr.sin_family                = AF_INET;
 				remote_addr.sin_addr.S_un.S_un_b.s_b1 = remote_host->h_addr[0];
 				remote_addr.sin_addr.S_un.S_un_b.s_b2 = remote_host->h_addr[1];
@@ -1204,6 +1206,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 				remote_addr.sin_port                  = htons(80);
 				ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
 				if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
+					// todo: set status on task to failed
 					SetStatusText(ss->stream->window->tab, "Connect failed");
 					return 0;
 				}

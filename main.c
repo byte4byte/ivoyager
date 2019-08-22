@@ -67,6 +67,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	#define RUN_TASK_STATE_OPEN_STREAM 0
 	#define RUN_TASK_STATE_READ_STREAM 1
 	#define RUN_TASK_STATE_PARSE_DOM   2
+	#define RUN_TASK_STATE_CONNECTING  3
 	
 	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, &state, NULL);
 	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM far *)&open_url_data, NULL);
@@ -100,7 +101,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 						open_url_data->stream = stream;
 						open_url_data->url_info = url_info;
 						
-						AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
+						AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_CONNECTING);
 						AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
 						
 						break;
@@ -130,6 +131,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 			}
 			break;
 		}
+		case RUN_TASK_STATE_CONNECTING: // todo fill out case
 		case RUN_TASK_STATE_READ_STREAM:
 		{
 			int addidx;
