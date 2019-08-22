@@ -1,6 +1,7 @@
 #include "ivoyager.h"
 
 #include <stdio.h>
+#include <winsock.h>
 #ifdef WIN3_1
 #include <wing.h>
 #include <stdarg.h>
@@ -11,10 +12,11 @@
 #include <richedit.h>
 #endif
 
-static Task far *g_tabTask = NULL, *g_socketsTask = NULL;
+static Task far *g_tabTask = NULL, far *g_socketsTask = NULL;
 
 #include "utils.c"
 #include "url.c"
+#include "stream.c"
 #include "http.c"
 
 static HWND hAddressBar, hTopBrowserWnd;
@@ -42,7 +44,7 @@ typedef struct ParseCSSTaskParams {
 BOOL RunOpenUrlTask(Task far *task) {
 	typedef struct {
 		URL_INFO far *url_info;
-		FILE *fp;
+		Stream far *stream;
 	} OPEN_URL_DATA;
 	
 	typedef struct {
@@ -55,6 +57,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	OPEN_URL_DATA far *open_url_data;
 	BOOL ret = FALSE;
 	LPARAM state;
+	Stream far *stream;
 		
 	#define RUN_TASK_VAR_STATE   0
 	#define RUN_TASK_VAR_DATA  	 1
@@ -75,44 +78,45 @@ BOOL RunOpenUrlTask(Task far *task) {
 				break;
 			}
 			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hSource, "");
-			switch (url_info->protocol) {
-				case HTTP_PROTOCOL: 
-				{
-					SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->domain);
-					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Connecting to: \"%s\"", url_info->domain);
-					ret = TRUE;
-					break;
-				}
-				case FILE_PROTOCOL:
-				{
-					FILE *fp;
-					//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
-					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Opening: \"%s\"", url_info->path);
-					SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->path);
-					fp = _ffopen(url_info->path, "rb");
-					if (! fp) { // 404
-						//MessageBox(g_TOP_WINDOW.hWnd, "404 ERROR", "", MB_OK);
-						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "\"%s\" - 404 Error", url_info->path);
+			
+			stream = openStream(url_info);
+			if (! stream) {
+				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "\"%s\" - 404 Error", url_info->path);
+				ret = TRUE;
+			}
+			else {
+
+				switch (url_info->protocol) {
+					case HTTP_PROTOCOL: 
+					{
+						SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->domain);
+						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Connecting to: \"%s\"", url_info->domain);
 						ret = TRUE;
 						break;
 					}
-					else {
+					case FILE_PROTOCOL:
+					{
+						FILE *fp;
+						//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
+						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Opening: \"%s\"", url_info->path);
+						SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->path);
+
 						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Opened: \"%s\"", url_info->path);
+						
+						open_url_data = (OPEN_URL_DATA far *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
+						_fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
+						
+						open_url_data->stream = stream;
+						open_url_data->url_info = url_info;
+						
+						AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
+						AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
+						break;
 					}
-					
-					open_url_data = (OPEN_URL_DATA far *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
-					_fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
-					
-					open_url_data->fp = fp;
-					open_url_data->url_info = url_info;
-					
-					AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
-					AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
-					break;
+					default:
+						ret = TRUE;
+						break;
 				}
-				default:
-					ret = TRUE;
-					break;
 			}
 			break;
 		}
@@ -120,16 +124,21 @@ BOOL RunOpenUrlTask(Task far *task) {
 		{
 			int addidx;
 			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
-			read_chunk->len = fread(read_chunk->read_buff, 1, sizeof(read_chunk->read_buff)-1, open_url_data->fp);
-			read_chunk->eof = feof(open_url_data->fp);
-			if (read_chunk->len <= 0) {
-				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
-				LocalFree((HGLOBAL)read_chunk);
-				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
-			}
-			else {	
+			read_chunk->len = open_url_data->stream->read(open_url_data->stream, read_chunk->read_buff, sizeof(read_chunk->read_buff)-1);
+			read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
+			if (read_chunk->len > 0) {	
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
 				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+			}
+			else if (read_chunk->eof) {
+				read_chunk->read_buff[0] = '\0';
+				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
+				//LocalFree((HGLOBAL)read_chunk);
+				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
+			}
+			else {
+				
 			}
 			//break;
 		}
@@ -160,7 +169,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	if (ret) { // free data
 		//MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
 		if (open_url_data) {
-			if (open_url_data->fp) fclose(open_url_data->fp);
+			if (open_url_data->stream) closeStream(open_url_data->stream);
 			FreeUrlInfo(open_url_data->url_info);
 			GlobalFree((HGLOBAL)open_url_data);
 		}
@@ -315,6 +324,10 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 	g_tabTask = AllocTempTask();
 	g_socketsTask = AllocTempTask();
+	if (! WinsockStart()) {
+		MessageBox(NULL, "Unable to start winsock!", "", MB_OK);
+		return 1;
+	}
 
 	browserWin = CreateWindow("VOYAGER_SHELL", "Internet Voyager v1.0", WS_THICKFRAME | WS_OVERLAPPEDWINDOW  | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	UpdateWindow(browserWin);

@@ -1172,3 +1172,9 @@ DWORD WINAPI workerProc(LPVOID unused) {
 	return 0;
 }
 #endif
+
+int WinsockStart() {
+	WSADATA  wsaData;
+    if ( WSAStartup( 0x0101 , &wsaData ) ) { return FALSE; }
+	return TRUE;
+}
