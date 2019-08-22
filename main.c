@@ -13,6 +13,7 @@
 #endif
 
 static Task far *g_tabTask = NULL, far *g_socketsTask = NULL;
+HWND browserWin;
 
 #include "utils.c"
 #include "url.c"
@@ -79,7 +80,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 			}
 			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hSource, "");
 			
-			stream = openStream(url_info);
+			stream = openStream(((DownloadFileTaskParams far *)task->params)->window, url_info);
 			if (! stream) {
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "\"%s\" - 404 Error", url_info->path);
 				ret = TRUE;
@@ -91,12 +92,21 @@ BOOL RunOpenUrlTask(Task far *task) {
 					{
 						SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->domain);
 						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Connecting to: \"%s\"", url_info->domain);
-						ret = TRUE;
+						
+						
+						open_url_data = (OPEN_URL_DATA far *)GlobalAlloc(GMEM_FIXED, sizeof(OPEN_URL_DATA));
+						_fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
+						
+						open_url_data->stream = stream;
+						open_url_data->url_info = url_info;
+						
+						AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
+						AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
+						
 						break;
 					}
 					case FILE_PROTOCOL:
 					{
-						FILE *fp;
 						//MessageBox(g_TOP_WINDOW.hWnd, url_info->path, "", MB_OK);
 						SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Opening: \"%s\"", url_info->path);
 						SetTabTitle(((DownloadFileTaskParams far *)task->params)->window->tab, url_info->path);
@@ -212,9 +222,14 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, LPSTR  url) {
 
 	loadUrlTask->params = (LPVOID)params;
 
-	AddTask(loadUrlTask);
 
-	SetTabURL(tab, url);
+	/* todo: find empty slot for web request in window else queue it */
+	//if (! emptyslot) {} else
+		{
+			AddTask(loadUrlTask);
+
+			SetTabURL(tab, url);
+		}
 	
 	#include "tests/taskdata.c"
 }
@@ -224,7 +239,6 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, LPSTR  url) {
 int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 	static WNDCLASS wc;
 	static MSG msg;
-	HWND browserWin;
 	int i = 0;
 	HICON icon = LoadIcon(hInstance, IDI_APPLICATION);
 	

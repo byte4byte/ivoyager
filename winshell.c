@@ -1137,6 +1137,80 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 
 			return 0;
 		}
+		case WM_FSOCKET: {
+			LPARAM ret;
+			SocketStream far *ss;
+			GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, s), sizeof(SOCKET), &ret);
+			ss = (SocketStream far *)ret;
+			if (! ss) return 0;
+
+			switch (WSAGETSELECTEVENT(lParam))
+            {
+            case FD_CONNECT:
+                 //G_con = 1;
+                 SetStatusText(ss->stream->window->tab, "Connection successful");
+                 return 0;
+
+            case FD_WRITE:
+                 /*if (!G_con) return NULL;
+                 MSG("Sendind data...")
+                 sprintf(G_out,"%s\r\n",G_name);
+                 len = strlen(G_out);
+                 send(G_s, (char far *)G_out, len, SO_DONTROUTE);*/
+                 return 0;
+
+            case FD_READ:
+                 /*if (!G_con) return NULL;
+                 MSG("Receiving data...")
+                 ret = recv(G_s, (char far *)G_query, QUERYLEN, 0);
+                 if ( ret==SOCKET_ERROR &&
+                      WSAGetLastError()!=WSAEWOULDBLOCK ) CANCEL
+                 G_query[ret] = 0;
+                 PostMessage(hWnd,WM_QUERYDONE,0,0);*/
+                 return 0;
+
+            case FD_CLOSE:
+                 SetStatusText(ss->stream->window->tab, "Connection closed");
+                 //G_con = 0;
+                 //closesocket(G_s);
+                 return 0;
+            }
+			return 0;
+		}
+		case WM_HOSTRESOLVED: {
+			LPARAM ret;
+			SocketStream far *ss;
+			GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, hGetHostname), sizeof(HANDLE), &ret);
+			ss = (SocketStream far *)ret;
+			if (WSAGETASYNCERROR(lParam)) {
+				if (ss) {
+					SetStatusText(ss->stream->window->tab, "Unable to resolve");
+				}
+				//MessageBox(hWnd, "Unable to resolve", "", MB_OK);
+				return 0;
+			}
+			//MessageBox(hWnd, "Resolved", "", MB_OK);
+			if (ss) {
+				int ret;
+				struct hostent far *remote_host;
+				struct sockaddr_in remote_addr;
+				SetStatusText(ss->stream->window->tab, "Host Resolved");
+				remote_host = (struct hostent *)ss->getHostBuf;
+				remote_addr.sin_family                = AF_INET;
+				remote_addr.sin_addr.S_un.S_un_b.s_b1 = remote_host->h_addr[0];
+				remote_addr.sin_addr.S_un.S_un_b.s_b2 = remote_host->h_addr[1];
+				remote_addr.sin_addr.S_un.S_un_b.s_b3 = remote_host->h_addr[2];
+				remote_addr.sin_addr.S_un.S_un_b.s_b4 = remote_host->h_addr[3];
+				remote_addr.sin_port                  = htons(80);
+				ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
+				if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
+					SetStatusText(ss->stream->window->tab, "Connect failed");
+					return 0;
+				}
+				SetStatusText(ss->stream->window->tab, "Connecting...");
+			}
+			return 0;
+		}
 		case WM_SIZE: {
 			RECT rc;
 			GetClientRect(hWnd, &rc);
