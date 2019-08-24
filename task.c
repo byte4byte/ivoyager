@@ -460,6 +460,43 @@ int  GetCustomTaskListIdxByData(Task  far *task, DWORD id, LPARAM data) {
 	return -1;
 }
 
+BOOL  GetCustomTaskListDataByStringField(Task  far *task, DWORD id, char far *string, int ptrOffset, BOOL caseInsensitive, LPARAM  far *out) {
+	TaskData far *start;
+
+	*out = 0;
+
+#ifndef NOTHREADS
+	EnterCriticalSection(&task->cs);
+#endif
+
+	if (! GetCustomTaskVar(task, id, (LPVOID )&start, NULL)) {
+#ifndef NOTHREADS
+		LeaveCriticalSection(&task->cs);
+#endif
+		return FALSE;
+	}
+
+	while (start) {
+		char far * far *ptr = (char far * far *)start->data + ptrOffset;
+		BOOL found = (caseInsensitive ? (lstrcmpi(string, *ptr) == 0) : (lstrcmp(string, *ptr) == 0));
+		//MessageBox(NULL, *ptr, "", MB_OK);
+		if (found) {
+			*out = start->data;
+#ifndef NOTHREADS
+			LeaveCriticalSection(&task->cs);
+#endif
+			return TRUE;
+		}
+		start = start->next;
+	}
+
+#ifndef NOTHREADS
+	LeaveCriticalSection(&task->cs);
+#endif
+	return FALSE;
+}
+
+
 BOOL  GetCustomTaskListDataByPtrField(Task  far *task, DWORD id, char far *val, int ptrOffset, int numbytes, LPARAM  far *out) {
 	TaskData far *start;
 

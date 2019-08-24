@@ -113,7 +113,7 @@ static LPSTR  NormalizePath(LPSTR  path) {
 	return ret;
 }
 
-static URL_INFO far *  GetUrlInfo(LPSTR  url) {
+static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
 	char far *tmp_url;
 	LPSTR username = NULL;
 	LPSTR domain;
@@ -135,7 +135,18 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url) {
 		url += 7;
 	}
 	else if (IsAbsolutePath(url)) {
-		url_info->protocol = FILE_PROTOCOL;
+		if (base_url) {
+			//copy base to url_info and use url as path
+			_fmemcpy(url_info, base_url, sizeof(URL_INFO));
+			url_info->path = url;
+			return url_info;
+		}
+		else {
+			url_info->protocol = FILE_PROTOCOL;
+		}
+	}
+	else if (base_url) {
+		// copy base to url_info and append url to base path
 	}
 	
 	if (url_info->protocol == FILE_PROTOCOL) {

@@ -68,6 +68,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	#define CONNECT_STATE_CONNECTING	0
 	#define CONNECT_STATE_ERROR			1
 	#define	CONNECT_STATE_SUCCESS		2
+	#define	CONNECT_STATE_READY			3
 	
 	#define RUN_TASK_STATE_OPEN_STREAM 0
 	#define RUN_TASK_STATE_READ_STREAM 1
@@ -79,7 +80,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	switch (state) {
 		case RUN_TASK_STATE_OPEN_STREAM:
 		{
-			URL_INFO  far *url_info = GetUrlInfo(((DownloadFileTaskParams far *)task->params)->url);
+			URL_INFO  far *url_info = GetUrlInfo(((DownloadFileTaskParams far *)task->params)->url, NULL);
 			if (! url_info) {
 				ret = TRUE;
 				break;
@@ -149,6 +150,9 @@ BOOL RunOpenUrlTask(Task far *task) {
 				break;
 			}
 			else if (connect_state == CONNECT_STATE_SUCCESS) {
+				break;
+			}
+			else if (connect_state == CONNECT_STATE_READY) {
 				// let fall into read stream
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
 			}

@@ -1169,8 +1169,23 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             case FD_READ: {
 				char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, 1024);
 				int ret = recv(ss->s, buff, 1022, 0);
-				buff[ret] = '\0';
-				DebugLog(ss->stream->window->tab, "%s", buff);
+				if (ret > 0) {
+					BOOL headersParsed = FALSE;
+					buff[ret] = '\0';
+					HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed);
+					if (headersParsed) {
+						LPARAM location_header;
+						GetCustomTaskListDataByStringField(((Stream_HTTP far *)ss->stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", offsetof(HttpHeader, szName), TRUE, &location_header);
+						if (location_header) {
+							redirectStream((Stream_HTTP far *)ss->stream, ((HttpHeader far *)location_header)->szValue);
+							//MessageBox(hWnd, ((HttpHeader far *)location_header)->szValue, "", MB_OK);
+						}
+						else {
+							AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
+						}
+					}
+					//DebugLog(ss->stream->window->tab, "%s", buff);
+				}
 				GlobalFree((HGLOBAL)buff);
                  /*if (!G_con) return NULL;
                  MSG("Receiving data...")
