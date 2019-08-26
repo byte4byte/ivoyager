@@ -85,8 +85,8 @@ BOOL  AddTask(Task far *task) {
 			curr->next = (TaskQueue far *)GlobalAlloc(GMEM_FIXED, sizeof(TaskQueue));
 			_fmemset(curr->next, 0, sizeof(TaskQueue));
 			curr = curr->next;
-			curr->task = task;
-
+			curr->task = task;	
+			
 #ifndef NOTHREADS
 			LeaveCriticalSection(&g_TASK_CS);
 #endif
@@ -94,7 +94,7 @@ BOOL  AddTask(Task far *task) {
 			return TRUE;
 		}
 		curr = curr->next;
-	} while(curr->next);
+	} while(1);
 
 #ifndef NOTHREADS
 	LeaveCriticalSection(&g_TASK_CS);
@@ -586,12 +586,16 @@ BOOL  GetNextTask(Task far **task) {
 	curr = &g_TASK_QUEUE;
 	idx = 0;
 	while (curr->next) {
+		
+		//if (idx > 0) MessageBox(NULL, "found", "", MB_OK);
 		curr = curr->next;
 		if (! curr->task->locked && (curr->task->dwNextRun == 0 || GetTickCount() >= curr->task->dwNextRun)) {
 			if (idx >= g_CURR_TASK_INDEX) {
 				curr->task->locked = TRUE;
 				g_CURR_TASK_INDEX++;
 				*task = curr->task;
+				
+				
 
 #ifndef NOTHREADS
 				LeaveCriticalSection(&g_TASK_CS);

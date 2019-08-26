@@ -149,11 +149,13 @@ COLORREF GetTabColor(BOOL selected, BOOL special, BOOL over) {
 	return (selected ? RGB(182, 82, 72) : (special ? RGB(0, 0, 0) : RGB(62, 62, 62)));
 }
 
+#define COLOR(x) x>255?255:x
+
 COLORREF GetTabShineColor(BOOL selected, BOOL special, BOOL over) {
-	int inc = 30;
+	int inc = 190;
 	//return (selected ? RGB(255, 245, 245) : (special ? RGB(255, 255, 255) : RGB(255, 255, 255)));
-	if (over) return selected ? RGB(162+inc, 62+inc, 52+inc) : RGB(22+inc, 22+inc, 192+inc);
-	return (selected ? RGB(182+inc, 82+inc, 72+inc) : (special ? RGB(0+inc, 0+inc, 0+inc) : RGB(62+inc, 62+inc, 62+inc)));
+	if (over) return selected ? RGB(COLOR(162+inc), COLOR(62+inc), COLOR(52+inc)) : RGB(COLOR(22+inc), COLOR(22+inc), COLOR(192+inc));
+	return (selected ? RGB(COLOR(182+inc), COLOR(82+inc), COLOR(72+inc)) : (special ? RGB(COLOR(0+inc), COLOR(0+inc), COLOR(0+inc)) : RGB(62+inc, 62+inc, 62+inc)));
 }
 
 COLORREF GetWinColor() {
@@ -1079,6 +1081,14 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 				//GetClientRect(hAddressBar, &rc);
 				fontHeight += 2;
 			}
+#else
+	if (hAddrBarFont) {
+					DeleteObject(hAddrBarFont);
+				}
+		hAddrBarFont = CreateFont(fontHeight-4, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE, ANSI_CHARSET, 
+				OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
+				DEFAULT_PITCH | FF_DONTCARE, "Arial");
+				SendMessage(hAddressBar, WM_SETFONT, (WPARAM)hAddrBarFont, TRUE);
 #endif			
 			GetClientRect(hWnd, &rc);
 /*#ifdef WIN3_1
@@ -1095,9 +1105,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			t = fontHeight+padding+1+tabpadding;
 #ifdef WIN3_1			
 {
-			RECT rcBar;
-			GetClientRect(hAddressBar, &rcBar);
-			MoveWindow(hAddressBar, padding+3, t+1+((fontHeight)/2-(rcBar.bottom/2)), rc.right-(padding*2)-6, rcBar.bottom-1, TRUE);
+			MoveWindow(hAddressBar, padding+3, t+2, rc.right-(padding*2)-6, fontHeight-2, TRUE);
 }
 #else
 			MoveWindow(hAddressBar, padding+3, t+2, rc.right-(padding*2)-6, fontHeight-2, TRUE);
@@ -1232,7 +1240,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 				remote_addr.sin_addr.S_un.S_un_b.s_b2 = remote_host->h_addr[1];
 				remote_addr.sin_addr.S_un.S_un_b.s_b3 = remote_host->h_addr[2];
 				remote_addr.sin_addr.S_un.S_un_b.s_b4 = remote_host->h_addr[3];
-				remote_addr.sin_port                  = htons(80);
+				remote_addr.sin_port                  = htons(((Stream_HTTP far *)ss->stream)->http->url_info->port);
 				ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
 				if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
 					// todo: set status on task to failed

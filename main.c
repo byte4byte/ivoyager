@@ -81,6 +81,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 		case RUN_TASK_STATE_OPEN_STREAM:
 		{
 			URL_INFO  far *url_info = GetUrlInfo(((DownloadFileTaskParams far *)task->params)->url, NULL);
+			//MessageBox(NULL, "open stream", "", MB_OK);
 			if (! url_info) {
 				ret = TRUE;
 				break;
@@ -237,6 +238,8 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, DomNode *element, LPSTR  u
 	DownloadFileTaskParams far *params;
 	Task far *loadUrlTask;
 	
+	//MessageBox(browserWin, url, "", MB_OK);
+	
 	loadUrlTask = (Task  far *)GlobalAlloc(GMEM_FIXED, sizeof(Task));
 	_fmemset(loadUrlTask, 0, sizeof(Task));
 	loadUrlTask->type = TASK_LOADURL;
@@ -257,7 +260,7 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, DomNode *element, LPSTR  u
 
 			SetTabURL(tab, url);
 		}
-	
+		
 	#include "tests/taskdata.c"
 }
 
