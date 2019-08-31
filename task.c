@@ -28,8 +28,9 @@ BOOL  RemoveTask(Task  far *task) {
 		if (curr->task == task) {
 			if (idx >= g_CURR_TASK_INDEX) g_CURR_TASK_INDEX--;
 
-			GlobalFree((HGLOBAL)curr);
 			prev->next = curr->next;
+
+			GlobalFree((HGLOBAL)curr);
 
 #ifndef NOTHREADS
 			LeaveCriticalSection(&g_TASK_CS);

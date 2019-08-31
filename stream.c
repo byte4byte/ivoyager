@@ -113,7 +113,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 	switch (url_info->protocol) {
 		case HTTP_PROTOCOL: 
 		{
-			Stream_http *http;
+			//Stream_http *http;
 			Stream_HTTP far *ret = (Stream_HTTP far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_HTTP));
 			SocketStream far *ss;
 			_fmemset(ret, 0, sizeof(Stream_HTTP));

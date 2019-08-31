@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <winsock.h>
 #ifdef WIN3_1
-#include <wing.h>
+//#include <wing.h>
 #include <stdarg.h>
 #endif
 #ifndef WIN3_1
@@ -283,7 +283,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	HMODULE user32dll = GetModuleHandle(TEXT("user32.dll"));
 	GetDpiForWindow = (lpGetDpiForWindow)GetProcAddress(user32dll, "GetDpiForWindow");
 	if (hShCore) {
-		typedef HRESULT WINAPI (*lpSetProcessDpiAwareness)(int value);
+		typedef HRESULT  (WINAPI *lpSetProcessDpiAwareness)(int value);
 		enum PROCESS_DPI_AWARENESS {
 		  PROCESS_DPI_UNAWARE,
 		  PROCESS_SYSTEM_DPI_AWARE,

@@ -7,3 +7,9 @@
 *.MK1
 *.TGT
 *.WPJ
+*.ncb
+*.opt
+*.plg
+*.EXE
+Debug/*
+Release/*

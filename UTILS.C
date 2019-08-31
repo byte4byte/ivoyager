@@ -2,6 +2,7 @@
 #define _UTILS_C
 
 #include <ctype.h>
+#include <stdarg.h>
 
 #ifdef WIN3_1
 
@@ -205,6 +206,156 @@ static FILE *_ffopen(const char far *filename, const char far *mode) {
 
 
 #endif
+
+#ifndef ULONG_MAX
+#define	ULONG_MAX	((unsigned long)(~0L))		/* 0xFFFFFFFF */
+#endif
+
+/*
+ * Convert a string to an unsigned long integer.
+ *
+ * Ignores `locale' stuff.  Assumes that the upper and lower case
+ * alphabets and digits are each contiguous.
+ */
+static unsigned long
+_fstrtoul(const char far *nptr, char far * far *endptr, register int base)
+{
+	register const char far *s = nptr;
+	register unsigned long acc;
+	register int c;
+	register unsigned long cutoff;
+	register int neg = 0, any, cutlim;
+
+	/*
+	 * See strtol for comments as to the logic used.
+	 */
+	do {
+		c = *s++;
+	} while (isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+	cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
+	cutlim = (unsigned long)ULONG_MAX % (unsigned long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+		if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = ULONG_MAX;
+	    //	errno = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char far *) (any ? s - 1 : nptr);
+	return (acc);
+}
+
+#define PTR void *
+
+static int
+vprintf_buffer_size (const char far *format, va_list args)
+{
+  const char far *p = format;
+  /* Add one to make sure that it is never zero, which might cause malloc
+     to return NULL.  */
+  int total_width = lstrlen (format) + 1;
+  va_list ap;
+
+#ifdef va_copy
+  va_copy (ap, args);
+#else
+  _fmemcpy ((PTR) &ap, (PTR) &args, sizeof (va_list));
+#endif
+
+  while (*p != '\0')
+    {
+      if (*p++ == '%')
+	{
+	  while (_fstrchr ("-+ #0", *p))
+	    ++p;
+	  if (*p == '*')
+	    {
+	      ++p;
+	      total_width += abs (va_arg (ap, int));
+	    }
+	  else
+	    total_width += _fstrtoul (p, (char far * far *) &p, 10);
+	  if (*p == '.')
+	    {
+	      ++p;
+	      if (*p == '*')
+		{
+		  ++p;
+		  total_width += abs (va_arg (ap, int));
+		}
+	      else
+	      total_width += _fstrtoul (p, (char far * far *) &p, 10);
+	    }
+	  while (_fstrchr ("hlL", *p))
+	    ++p;
+	  /* Should be big enough for any format specifier except %s and floats.  */
+	  total_width += 30;
+	  switch (*p)
+	    {
+	    case 'd':
+	    case 'i':
+	    case 'o':
+	    case 'u':
+	    case 'x':
+	    case 'X':
+	    case 'c':
+	      (void) va_arg (ap, int);
+	      break;
+	    case 'f':
+	    case 'e':
+	    case 'E':
+	    case 'g':
+	    case 'G':
+	      (void) va_arg (ap, double);
+	      /* Since an ieee double can have an exponent of 307, we'll
+		 make the buffer wide enough to cover the gross case. */
+	      total_width += 307;
+	      break;
+	    case 's':
+	      total_width += lstrlen (va_arg (ap, char far *));
+	      break;
+	    case 'p':
+	    case 'n':
+	      (void) va_arg (ap, char far *);
+	      break;
+	    }
+	  p++;
+	}
+    }
+#ifdef va_copy
+  va_end (ap);
+#endif
+  return total_width;
+}
 
 
 #endif
