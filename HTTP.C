@@ -145,17 +145,18 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 					while (*p) {
 						if (*p == '\n') {
 							LPARAM chunk_size;
+                                                        LPSTR fullsize;
 							*p = '\0';
 							//MessageBox(browserWin, "here", "", MB_OK);
-							LPSTR fullsize = Trim(ConcatVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_VAR, buff), 1, 1);
-							if (! strcmp(fullsize, "")) {
+							fullsize = Trim(ConcatVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_VAR, buff), 1, 1);
+							if (! lstrcmp(fullsize, "")) {
 								*p = '\n';
 								p++;
 								continue;
 							}
 							AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_VAR, (LPARAM)NULL);
 							
-							chunk_size = strtol(fullsize, NULL, 16);
+							chunk_size = _fstrtoul(fullsize, NULL, 16);
 							AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
 							
 							GlobalFree((HGLOBAL)fullsize);

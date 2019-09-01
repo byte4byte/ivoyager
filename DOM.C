@@ -1242,8 +1242,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 		
 		switch (state) {
 			case PARSE_STATE_TAG_NEW_TAG:
-				currNode = (DomNode far *)GlobalAlloc(GMEM_FIXED, sizeof(DomNode));
-				_fmemset(currNode, 0, sizeof(DomNode));
+				//currNode = (DomNode far *)GlobalAlloc(GMEM_FIXED, sizeof(DomNode));
+				//_fmemset(currNode, 0, sizeof(DomNode));
 			
 				state = PARSE_STATE_TAG_START;
 				AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, state);
@@ -1288,7 +1288,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 				if (ptrLastPos) {
 					chRestore = *ptrLastPos;
 					*ptrLastPos = '\0';
-					ConcatVar(task, PARSE_DOM_CURR_TEXT, last_node_ptr);	
+					ConcatVar(task, PARSE_DOM_CURR_TEXT, last_node_ptr);
 					//MessageBoxA(window->hWnd, last_node_ptr, "add text", MB_OK);
 					*ptrLastPos = chRestore;
 				}

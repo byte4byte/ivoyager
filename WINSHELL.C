@@ -21,6 +21,8 @@ void DebugLogAttr(Tab far *tab, BOOL bold, BOOL italic, COLORREF color) {
 	DWORD dwMask;
 	DWORD dwEffect;
 
+	
+
 	memset(&cf,0,sizeof(cf));
 	cf.cbSize = sizeof(cf);
 
@@ -43,6 +45,8 @@ void DebugLogAttr(Tab far *tab, BOOL bold, BOOL italic, COLORREF color) {
 void WriteSource(Tab far *tab, LPSTR raw, int len) {
 	int ndx;
 
+       //	return;
+
 	ndx = GetWindowTextLength (tab->hSource);
 	SetFocus(tab->hSource);
 	#ifdef WIN32
@@ -60,12 +64,16 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 	int     len;
 	char    *buffer;
 
+       //	return;
+
+	if (! tab) tab = TabFromId(g_currTabId);
+
 	// retrieve the variable arguments
 	va_start( args, format );
 
 //#ifndef WIN3_1
 //	len = _vscprintf( format, args ) // _vscprintf doesn't count
-								+ 1; // terminating '\0'
+							    //	+ 1; // terminating '\0'
 //#else
 	//len = 1024*6;
 	len = vprintf_buffer_size(format, args);

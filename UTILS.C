@@ -8,7 +8,7 @@
 
 static void far *GAlloc(int len) {
 	void far *ret = (void far *)GlobalLock(GlobalAlloc(GMEM_FIXED, len));
-	if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", "", MB_OK);
+	if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
 	return ret;
 }
 

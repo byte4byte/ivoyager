@@ -166,16 +166,19 @@ BOOL RunOpenUrlTask(Task far *task) {
 		{
 			int addidx;
 			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
+                        READ_CHUNK far *lpread_chunk;
 			read_chunk->len = open_url_data->stream->read(open_url_data->stream, read_chunk->read_buff, sizeof(read_chunk->read_buff)-1);
 			read_chunk->eof = FALSE;
+			lpread_chunk = NearPtrToFar((char near *)read_chunk, sizeof(READ_CHUNK));
+                        LocalFree((HLOCAL)read_chunk);
 			//read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
 			if (read_chunk->len > 0) {	
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
-				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)lpread_chunk);
 			}
 			else if (open_url_data->stream->eof(open_url_data->stream)) {
-				read_chunk->eof = TRUE;
-				read_chunk->read_buff[0] = '\0';
+				lpread_chunk->eof = TRUE;
+				lpread_chunk->read_buff[0] = '\0';
 				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
 				//LocalFree((HGLOBAL)read_chunk);
@@ -184,7 +187,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 				DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
 			}
 			else {
-				
+			      GlobalFree((HGLOBAL)lpread_chunk);
 			}
 			//break;
 		}
@@ -200,11 +203,11 @@ BOOL RunOpenUrlTask(Task far *task) {
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;
 			ptr = read_chunk->read_buff;
 			
-			if (ParseDOMChunk(((DownloadFileTaskParams far *)task->params)->window, task, (char far **)&ptr, read_chunk->len, read_chunk->eof)) {
+			if (ParseDOMChunk(((DownloadFileTaskParams far *)task->params)->window, task, (char far * far *)&ptr, read_chunk->len, read_chunk->eof)) {
 				
-				LocalFree((HLOCAL)read_chunk);
+				GlobalFree((HGLOBAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
-			}
+		       	}
 			
 			break;
 		}
