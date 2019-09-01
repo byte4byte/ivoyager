@@ -15,6 +15,24 @@
 static Task far *g_tabTask = NULL, far *g_socketsTask = NULL;
 HWND browserWin;
 
+#define RUN_TASK_VAR_STATE   		0
+#define RUN_TASK_VAR_DATA  	 		1
+#define RUN_TASK_VAR_CHUNKS  		2
+#define RUN_TASK_VAR_CONNECT_STATE	3
+
+#define CONNECT_STATE_CONNECTING	0
+#define CONNECT_STATE_ERROR			1
+#define	CONNECT_STATE_SUCCESS		2
+#define	CONNECT_STATE_READY			3
+#define CONNECT_STATE_CLOSED		4
+
+#define RUN_TASK_STATE_OPEN_STREAM 0
+#define RUN_TASK_STATE_READ_STREAM 1
+#define RUN_TASK_STATE_PARSE_DOM   2
+#define RUN_TASK_STATE_CONNECTING  3
+
+void WriteSource(Tab far *tab, LPSTR raw, int len) ;
+
 #include "utils.c"
 #include "url.c"
 #include "stream.c"
@@ -49,7 +67,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	} OPEN_URL_DATA;
 	
 	typedef struct {
-		char read_buff[1024];  // min 2
+		char read_buff[BUFFER_SIZE];  // should be >= FD_READ recv buff size
 		int len;
 		BOOL eof;
 	} READ_CHUNK;
@@ -59,21 +77,6 @@ BOOL RunOpenUrlTask(Task far *task) {
 	BOOL ret = FALSE;
 	LPARAM state;
 	Stream far *stream;
-		
-	#define RUN_TASK_VAR_STATE   		0
-	#define RUN_TASK_VAR_DATA  	 		1
-	#define RUN_TASK_VAR_CHUNKS  		2
-	#define RUN_TASK_VAR_CONNECT_STATE	3
-	
-	#define CONNECT_STATE_CONNECTING	0
-	#define CONNECT_STATE_ERROR			1
-	#define	CONNECT_STATE_SUCCESS		2
-	#define	CONNECT_STATE_READY			3
-	
-	#define RUN_TASK_STATE_OPEN_STREAM 0
-	#define RUN_TASK_STATE_READ_STREAM 1
-	#define RUN_TASK_STATE_PARSE_DOM   2
-	#define RUN_TASK_STATE_CONNECTING  3
 	
 	GetCustomTaskVar(task, RUN_TASK_VAR_STATE, &state, NULL);
 	GetCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM far *)&open_url_data, NULL);
@@ -87,6 +90,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 				break;
 			}
 			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hSource, "");
+			SetWindowText(((DownloadFileTaskParams far *)task->params)->window->tab->hConsole, "");
 			
 			stream = openStream(task, ((DownloadFileTaskParams far *)task->params)->window, url_info);
 			if (! stream) {
@@ -163,17 +167,21 @@ BOOL RunOpenUrlTask(Task far *task) {
 			int addidx;
 			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
 			read_chunk->len = open_url_data->stream->read(open_url_data->stream, read_chunk->read_buff, sizeof(read_chunk->read_buff)-1);
-			read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
+			read_chunk->eof = FALSE;
+			//read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
 			if (read_chunk->len > 0) {	
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
 				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 			}
-			else if (read_chunk->eof) {
+			else if (open_url_data->stream->eof(open_url_data->stream)) {
+				read_chunk->eof = TRUE;
 				read_chunk->read_buff[0] = '\0';
 				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
 				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
 				//LocalFree((HGLOBAL)read_chunk);
 				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
+				//MessageBox(browserWin, "EOF", "", MB_OK);
+				DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
 			}
 			else {
 				
@@ -186,7 +194,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 			char far *ptr;
 
 			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
-				ret = TRUE;
+				if (state == RUN_TASK_STATE_PARSE_DOM) ret = TRUE;
 				break;
 			}
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;

@@ -352,6 +352,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 			
 	}
 	
+	//DebugLog(window->tab, "\nbegin state: %ld - \"%s\"\n", state, *buff);
+	
 	for (;;) {
 		BOOL bNoInc = FALSE;
 		
@@ -613,6 +615,10 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 							state = PARSE_CSS_STATE_FIND_PROP;
 							SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state);
 							
+							//DebugLog(window->tab, "!!");
+							
+							//lpCurrSelectorStart = NULL;
+							
 							AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 							CSSOpenBracket(window, task);
 							break;
@@ -639,6 +645,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 						break;
 					}
 					else if (! isspace(*ptr)) {
+						
 						lpCurrPropStart = ptr;
 						state = PARSE_CSS_STATE_IN_PROP;
 						AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
@@ -974,7 +981,11 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 				break;
 			case PARSE_CSS_STATE_IN_PROP:
 				if (lpCurrPropStart) {
+					//DebugLog(window->tab, "saved in prop \"%s\"", lpCurrPropStart);
 					ConcatVar(task, PARSE_CSS_CURR_PROP, lpCurrPropStart);
+				}
+				else {
+					//DebugLog(window->tab, "saved in prop \"%NULL\"");
 				}
 				break;
 			case PARSE_CSS_STATE_IN_VALUE:
@@ -1009,7 +1020,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	
 	if (eof || bDone) {
 		Task far *findEndTask;
-
+		//ptr--;
+		state = 0;
 		GetCustomTaskVar(task, PARSE_CSS_FIND_END_TASK, (LPARAM far *)&findEndTask, NULL);
 		GetCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM far *)&lpCurrSelectorStart, NULL);
 		GetCustomTaskVar(task, PARSE_CSS_STATE_IN_PROP, (LPARAM far *)&lpCurrPropStart, NULL);
@@ -1033,6 +1045,9 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 	}
 	
 	*buff = ptr;
+	
+	//DebugLog(window->tab, "\nend state: %ld - \"%s\"\n", state, ptr);
+	AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 	
 	return TRUE;
 }
@@ -1237,7 +1252,10 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			case PARSE_STATE_CSS_CODE:
 				ParseCSSChunk(window, task, &state, NULL, &ptr, len-(ptr-*buff), eof);
 				last_node_ptr = ptr;
-				break;
+				//if (ptr < end) DebugLog(window->tab, "done css: \"%s\"\n", ptr);
+				//if (ptr < end && state != PARSE_STATE_CSS_CODE) continue;
+				//AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)NULL);	
+				if (state == PARSE_STATE_CSS_CODE) break;
 			case PARSE_STATE_TAG_START: {
 				BOOL inTag = FALSE;
 				char chRestore;

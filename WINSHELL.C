@@ -3,6 +3,12 @@ void RefreshShell() {
 	InvalidateRect(g_innerShell, NULL, TRUE);
 }
 
+#define CONSOLE_BUTTON 0
+#define SOURCE_BUTTON  1
+#define PAGE_BUTTON    2
+
+static int selected_status_button = CONSOLE_BUTTON;
+
 #include "tabs.c"
 
 #ifdef WIN3_1
@@ -30,9 +36,22 @@ void DebugLogAttr(Tab far *tab, BOOL bold, BOOL italic, COLORREF color) {
 	cf.dwMask = dwMask;
 	cf.dwEffects = dwEffect;
 
-	SendMessage(tab->hSource,EM_SETCHARFORMAT,SCF_SELECTION,(LPARAM)&cf);
+	SendMessage(tab->hConsole,EM_SETCHARFORMAT,SCF_SELECTION,(LPARAM)&cf);
 }
 #endif
+
+void WriteSource(Tab far *tab, LPSTR raw, int len) {
+	int ndx;
+
+	ndx = GetWindowTextLength (tab->hSource);
+	SetFocus(tab->hSource);
+	#ifdef WIN32
+	  SendMessage(tab->hSource, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+	#else
+	  SendMessage(tab->hSource, EM_SETSEL, 0, MAKELONG (ndx, ndx));
+	#endif
+	SendMessage(tab->hSource, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) raw));
+}
 
 void DebugLog(Tab far *tab, LPSTR format, ...) {
 	int ndx;
@@ -56,14 +75,14 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 
 	wvsprintf( buffer, format, args ); // C4996
 
-	ndx = GetWindowTextLength (tab->hSource);
-	SetFocus(tab->hSource);
+	ndx = GetWindowTextLength (tab->hConsole);
+	SetFocus(tab->hConsole);
 	#ifdef WIN32
-	  SendMessage(tab->hSource, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+	  SendMessage(tab->hConsole, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
 	#else
-	  SendMessage(tab->hSource, EM_SETSEL, 0, MAKELONG (ndx, ndx));
+	  SendMessage(tab->hConsole, EM_SETSEL, 0, MAKELONG (ndx, ndx));
 	#endif
-	SendMessage(tab->hSource, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) buffer));
+	SendMessage(tab->hConsole, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) buffer));
 
 	free(buffer);
 	va_end(args);
@@ -109,6 +128,10 @@ static WNDPROC oldAddressBarProc;
 #endif
 
 BOOL CreateTabChildWindows(HWND parent, Tab far *tab) {
+	tab->hConsole = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+	if (! tab->hConsole) {
+		tab->hConsole = CreateWindow("EDIT", "", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
+	}
 	tab->hSource = CreateWindow("RICHEDIT50W", "",  WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
 	if (! tab->hSource) {
 		tab->hSource = CreateWindow("EDIT", "", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOHSCROLL, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, parent, NULL, g_hInstance, NULL);
@@ -130,8 +153,10 @@ BOOL SetActiveTab(Tab far *tab) {
 		SetTabURL(currTab, buff);
 		GlobalFree((HGLOBAL)buff);
 		ShowWindow(currTab->hSource, SW_HIDE);
+		ShowWindow(currTab->hConsole, SW_HIDE);
 	}
-	ShowWindow(tab->hSource, SW_SHOW);
+	if (selected_status_button == CONSOLE_BUTTON) ShowWindow(tab->hConsole, SW_SHOW);
+	else if (selected_status_button == SOURCE_BUTTON) ShowWindow(tab->hSource, SW_SHOW);
 	g_currTabId = tab->id;
 	shell = GetParent(tab->hSource);
 	SendMessage(shell, WM_SIZE, 0, 0L);
@@ -199,6 +224,23 @@ lpGetDpiForWindow GetDpiForWindow = NULL;
 #define DEF_FONT_HEIGHT 25
 #define DEF_DPI_FONT_HEIGHT 14
 
+static void drawStatusButtonText(HDC hDC, WPARAM wParam, LPSTR szText, LPRECT rc) {
+	if (wParam == selected_status_button) {
+		SetTextColor(hDC, RGB(200, 200, 200));
+		rc->left += 2;
+		rc->top += 2;
+		DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+		SetTextColor(hDC, RGB(0, 0, 0));
+		rc->left -= 2;
+		rc->top -= 2;
+		DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );	
+	}
+	else {
+		SetTextColor(hDC, RGB(44, 44, 44));
+		DrawText(hDC, szText, lstrlen(szText), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+	}
+}
+
 LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static HWND hSource = NULL, hPage = NULL, hConsole = NULL;
 	static HFONT hToggleFont;
@@ -207,9 +249,9 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 		case WM_CREATE: {
 			
 
-			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)1, g_hInstance, NULL);
-			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)2, g_hInstance, NULL);
-			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)3, g_hInstance, NULL);
+			hSource = CreateWindow("BUTTON", "Source", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)SOURCE_BUTTON, g_hInstance, NULL);
+			hPage = CreateWindow("BUTTON", "Page", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)PAGE_BUTTON, g_hInstance, NULL);
+			hConsole = CreateWindow("BUTTON", "Console", WS_VISIBLE | WS_CHILD | BS_OWNERDRAW, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, hWnd, (HMENU)CONSOLE_BUTTON, g_hInstance, NULL);
 			
 			//SendMessage(hSource, WM_SETFONT, (WPARAM)hFont, TRUE);
 			//SendMessage(hPage, WM_SETFONT, (WPARAM)hFont, TRUE);
@@ -249,7 +291,7 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			hToggleFontBold = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial");
 #endif			
 		
-			if (wParam == 1) {
+			if (wParam == selected_status_button) {
 				SetTextColor(di->hDC, RGB(0, 0, 0));
 				hPrevFont = (HFONT)SelectObject(di->hDC, hToggleFontBold);
 				FillRect(di->hDC, &di->rcItem, GetStockObject(WHITE_BRUSH));
@@ -322,23 +364,14 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			
 			SetBkMode(di->hDC, TRANSPARENT);
 			switch (wParam) {
-				case 1:
-					SetTextColor(di->hDC, RGB(200, 200, 200));
-					di->rcItem.left += 2;
-					di->rcItem.top += 2;
-					DrawText(di->hDC, "Source", 6, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
-					SetTextColor(di->hDC, RGB(0, 0, 0));
-					di->rcItem.left -= 2;
-					di->rcItem.top -= 2;
-					DrawText(di->hDC, "Source", 6, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );	
+				case SOURCE_BUTTON:
+					drawStatusButtonText(di->hDC, wParam, "Source", &di->rcItem); 
 					break;
-				case 2:
-					SetTextColor(di->hDC, RGB(44, 44, 44));
-					DrawText(di->hDC, "Page", 4, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+				case PAGE_BUTTON:
+					drawStatusButtonText(di->hDC, wParam, "Page", &di->rcItem); 
 					break;					
-				case 3:
-					SetTextColor(di->hDC, RGB(44, 44, 44));
-					DrawText(di->hDC, "Console", 7, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+				case CONSOLE_BUTTON:
+					drawStatusButtonText(di->hDC, wParam, "Console", &di->rcItem); 
 					break;					
 			}
 			SelectObject(di->hDC, hPrevFont);
@@ -347,6 +380,25 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			DeleteObject(hToggleFontBold);
 			return TRUE;
 		}
+		case WM_COMMAND:
+			switch (LOWORD(wParam)) {
+				case SOURCE_BUTTON:
+					selected_status_button = SOURCE_BUTTON;
+					InvalidateRect(hWnd, NULL, TRUE);
+					SetActiveTab(TabFromId(g_currTabId));
+					break;
+				case CONSOLE_BUTTON:
+					selected_status_button = CONSOLE_BUTTON;
+					InvalidateRect(hWnd, NULL, TRUE);
+					SetActiveTab(TabFromId(g_currTabId));
+					break;
+				case PAGE_BUTTON:
+					selected_status_button = PAGE_BUTTON;
+					InvalidateRect(hWnd, NULL, TRUE);
+					SetActiveTab(TabFromId(g_currTabId));
+					break;
+			}
+			return 0;
 		case WM_SIZE: {
 			RECT rc, rcBtn;
 			int l, padding;
@@ -1165,6 +1217,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 			//MoveWindow(hToggleBar, 4, rc.bottom-fontHeight, rc.right-8, fontHeight-4, TRUE);
 			t++;
 			MoveWindow(currTab->hSource, 0, t, rc.right, h, TRUE);		
+			MoveWindow(currTab->hConsole, 0, t, rc.right, h, TRUE);		
 
 			t += h;
 			h = fontHeight + 2;
@@ -1224,22 +1277,15 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  return 0;
 
             case FD_READ: {
-				char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, 1024);
-				int ret = recv(ss->s, buff, 1022, 0);
+				char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
+				int ret = recv(ss->s, buff, BUFFER_SIZE-1, 0);
 				if (ret > 0) {
 					BOOL headersParsed = FALSE;
 					buff[ret] = '\0';
+					WriteSource(ss->stream->window->tab, buff, ret);
 					HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed);
 					if (headersParsed) {
-						LPARAM location_header;
-						GetCustomTaskListDataByStringField(((Stream_HTTP far *)ss->stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", offsetof(HttpHeader, szName), TRUE, &location_header);
-						if (location_header) {
-							redirectStream((Stream_HTTP far *)ss->stream, ((HttpHeader far *)location_header)->szValue);
-							//MessageBox(hWnd, ((HttpHeader far *)location_header)->szValue, "", MB_OK);
-						}
-						else {
-							AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
-						}
+						
 					}
 					//DebugLog(ss->stream->window->tab, "%s", buff);
 				}
@@ -1255,11 +1301,16 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  return 0;
 			}
 
-            case FD_CLOSE:
+            case FD_CLOSE: {
+				 LPARAM connect_state;
+				 GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
                  SetStatusText(ss->stream->window->tab, "Connection closed");
+				 if (connect_state != CONNECT_STATE_CONNECTING) AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
+				 //MessageBox(browserWin, "closed", "", MB_OK);
                  //G_con = 0;
                  //closesocket(G_s);
                  return 0;
+			}
             }
 			return 0;
 		}

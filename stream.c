@@ -7,6 +7,8 @@
 #define STREAM_FILE 0
 #define STREAM_HTTP 1
 
+#define HTTP_CHUNK_LIST_VAR 1
+
 typedef struct Stream Stream;
 
 typedef far int (* stream_read)(Stream far *stream, char near *buff, int len);
@@ -43,11 +45,15 @@ typedef struct Stream_http {
 
 typedef struct Stream_HTTP {
 	Stream stream; // must come first
+	Task far *chunksTask;
 	Stream_http far *http;
 } Stream_HTTP;
 
 int far readStream_FILE(Stream far *stream, char near *buff, int len) {
-	return fread(buff, 1, len, ((Stream_FILE far *)stream)->fp);
+	int ret = fread(buff, 1, len, ((Stream_FILE far *)stream)->fp);
+	buff[ret] = '\0';
+	WriteSource(stream->window->tab, buff, ret);
+	return ret;
 }
 
 BOOL far EOFstream_FILE(Stream far *stream) {
@@ -59,11 +65,24 @@ BOOL far closeStream_FILE(Stream far *stream) {
 }
 
 int far readStream_HTTP(Stream far *stream, char near *buff, int len) {
-	return 0;
+	LPARAM read_chunk_ptr;
+
+	if (! GetCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0, &read_chunk_ptr)) {
+		return 0;
+	}
+	
+	lstrcpy(buff, (LPSTR)read_chunk_ptr);
+	
+	GlobalFree((HGLOBAL)read_chunk_ptr);
+	RemoveCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0);
+	
+	return lstrlen(buff);
 }
 
 BOOL far EOFstream_HTTP(Stream far *stream) {
-	return TRUE;
+	LPARAM connect_state;
+	GetCustomTaskVar(stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
+	return connect_state == CONNECT_STATE_CLOSED/* && GetNumCustomTaskListData(((Stream_HTTP FAR *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR) == 0*/;
 }
 
 BOOL far closeStream_HTTP(Stream far *stream) {
@@ -73,6 +92,8 @@ BOOL far closeStream_HTTP(Stream far *stream) {
 BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
 	URL_INFO far *new_url_info;
 	SocketStream far *ss;
+	
+	AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CONNECTING);
 	
 	closesocket(ret->http->s);
 	new_url_info = GetUrlInfo(szUrl, ret->http->url_info);
@@ -92,7 +113,7 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
 	//ret->stream.window = window;
 	//ret->stream.task = task;
 	ret->http->url_info = new_url_info;
-	
+		
 	ss = (SocketStream far *)GlobalAlloc(GMEM_FIXED, sizeof(SocketStream));
 	ss->s = ret->http->s;
 	ss->stream = (Stream far *)ret;
@@ -117,6 +138,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 			Stream_HTTP far *ret = (Stream_HTTP far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_HTTP));
 			SocketStream far *ss;
 			_fmemset(ret, 0, sizeof(Stream_HTTP));
+			ret->chunksTask = AllocTempTask();
 			ret->http = (Stream_http far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_http));
 			_fmemset(ret->http, 0, sizeof(Stream_http));
 			

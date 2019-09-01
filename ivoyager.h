@@ -19,6 +19,10 @@
 #endif
 #endif
 
+#include <stddef.h>
+
+#define BUFFER_SIZE 1024
+
 #define NUM_THREADS 5
 
 #define TEST_PATH_NORMAL
