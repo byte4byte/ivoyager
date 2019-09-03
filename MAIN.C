@@ -38,6 +38,8 @@ void WriteSource(Tab far *tab, LPSTR raw, int len) ;
 #include "stream.c"
 #include "http.c"
 
+static FILE *fpLog, *fpSource;
+
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
@@ -165,29 +167,37 @@ BOOL RunOpenUrlTask(Task far *task) {
 		case RUN_TASK_STATE_READ_STREAM:
 		{
 			int addidx;
-			READ_CHUNK near *read_chunk = (READ_CHUNK near *)LocalAlloc(LMEM_FIXED, sizeof(READ_CHUNK));
-                        READ_CHUNK far *lpread_chunk;
-			read_chunk->len = open_url_data->stream->read(open_url_data->stream, read_chunk->read_buff, sizeof(read_chunk->read_buff)-1);
-			read_chunk->eof = FALSE;
-			lpread_chunk = NearPtrToFar((char near *)read_chunk, sizeof(READ_CHUNK));
-                        LocalFree((HLOCAL)read_chunk);
-			//read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
-			if (read_chunk->len > 0) {	
-				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
-				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)lpread_chunk);
-			}
-			else if (open_url_data->stream->eof(open_url_data->stream)) {
-				lpread_chunk->eof = TRUE;
-				lpread_chunk->read_buff[0] = '\0';
-				addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
-				SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
-				//LocalFree((HGLOBAL)read_chunk);
-				AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
-				//MessageBox(browserWin, "EOF", "", MB_OK);
-				DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
-			}
-			else {
-			      GlobalFree((HGLOBAL)lpread_chunk);
+            READ_CHUNK far *read_chunk;
+			if (open_url_data->stream->hasData(open_url_data->stream)) {
+				//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere1\n");
+				read_chunk = (READ_CHUNK far *)GlobalAlloc(GMEM_FIXED, sizeof(READ_CHUNK));
+				//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere1.2\n");
+				read_chunk->len = open_url_data->stream->read(open_url_data->stream, read_chunk->read_buff, sizeof(read_chunk->read_buff)-1);
+				//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere1.3\n");
+				read_chunk->eof = FALSE;
+				//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere2\n");
+				//read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
+				if (read_chunk->len > 0) {	
+					//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere3\n");
+					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
+					addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+				}
+				else if (open_url_data->stream->eof(open_url_data->stream)) {
+					//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere4\n");
+					read_chunk->eof = TRUE;
+					read_chunk->read_buff[0] = '\0';
+					addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
+					SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
+					//LocalFree((HGLOBAL)read_chunk);
+					AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
+					//MessageBox(browserWin, "EOF", "", MB_OK);
+					DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
+				}
+				else {
+					//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere5\n");
+					  GlobalFree((HGLOBAL)read_chunk);
+				}
+			
 			}
 			//break;
 		}
@@ -195,6 +205,8 @@ BOOL RunOpenUrlTask(Task far *task) {
 			LPARAM read_chunk_ptr;
 			READ_CHUNK far *read_chunk;
 			char far *ptr;
+			
+			//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere6\n");
 
 			if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
 				if (state == RUN_TASK_STATE_PARSE_DOM) ret = TRUE;
@@ -203,8 +215,10 @@ BOOL RunOpenUrlTask(Task far *task) {
 			read_chunk = (READ_CHUNK far *)read_chunk_ptr;
 			ptr = read_chunk->read_buff;
 			
+			//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere7\n");
+			
 			if (ParseDOMChunk(((DownloadFileTaskParams far *)task->params)->window, task, (char far * far *)&ptr, read_chunk->len, read_chunk->eof)) {
-				
+				//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere8\n");
 				GlobalFree((HGLOBAL)read_chunk);
 				RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
 		       	}
@@ -217,6 +231,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 	
 	if (ret) { // free data
 		//MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
+		//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere9\n");
 		if (open_url_data) {
 			if (open_url_data->stream) closeStream(open_url_data->stream);
 			FreeUrlInfo(open_url_data->url_info);
@@ -224,6 +239,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 		}
 		GlobalFree((HGLOBAL)((DownloadFileTaskParams far *)task->params)->url);
 		GlobalFree((HGLOBAL)task->params);
+		//DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere10\n");
 	}
 	return ret;
 }
@@ -248,6 +264,9 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, DomNode *element, LPSTR  u
 
 	DownloadFileTaskParams far *params;
 	Task far *loadUrlTask;
+	
+	fpLog = fopen("C:\\out.log", "w");
+	fpSource = fopen("C:\\source.log", "w");
 	
 	//MessageBox(browserWin, url, "", MB_OK);
 	
@@ -306,6 +325,8 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 	}
 #endif
+
+	
 
 	g_hInstance = hInstance;
 

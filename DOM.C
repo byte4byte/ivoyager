@@ -62,7 +62,7 @@
 
 #define COMPILE_JS_VAR_STATE  					300
 
-BOOL CompileJSChunk(ContentWindow far *window, Task far *task, LPARAM *state, DomNode far *scriptEl, char far **buff, int len, BOOL eof) {
+BOOL CompileJSChunk(ContentWindow far *window, Task far *task, LPARAM *state, DomNode far *scriptEl, char far * far *buff, int len, BOOL eof) {
 	*state = PARSE_STATE_TAG_START;
 	AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
 	return TRUE;
@@ -296,7 +296,7 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
 	return TRUE;
 }
 
-BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state, DomNode far *styleEl, char far **buff, int len, BOOL eof) {
+BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state, DomNode far *styleEl, char far * far *buff, int len, BOOL eof) {
 	LPARAM state;
 	
 	LPSTR lpCurrSelectorStart = NULL;
@@ -1054,6 +1054,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
 
 BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	LPSTR prevtag;
+	//return TRUE; 
+	{
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_TAG, ptr);
 	
 	GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
@@ -1071,9 +1073,12 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)fullptr);
 	
 	return TRUE;
+	}
 }
 
 BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) {
+	//return TRUE;
+	{
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_ATTRIB, ptr);
 	if (window && ! IsWhitespace(fullptr)) {
 		DebugLog(window->tab, " ");
@@ -1085,10 +1090,15 @@ BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) 
 	
 	AddCustomTaskVar(task, PARSE_DOM_CURR_ATTRIB, (LPARAM)NULL);
 	return TRUE;
+	}
 }
 
 BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr) {
+	//return TRUE;
+	{
+		
 	LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_VALUE, ptr);
+	//LPSTR fullptr = ptr;
 	if (window && ! IsWhitespace(fullptr)) {
 		DebugLog(window->tab, "=\"");
 		DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,138));
@@ -1100,11 +1110,12 @@ BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr)
 	
 	AddCustomTaskVar(task, PARSE_DOM_CURR_VALUE, (LPARAM)NULL);
 	return TRUE;
+	}
 }
 
 BOOL TextParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 	///*if (! IsWhitespace(ptr)) */MessageBox(window->hWnd, ptr, "text", MB_OK);
-
+//return TRUE;
 	//DebugLog("\"%s\" - Text parsed", ptr);
 	if (window) {
 		DebugLogAttr(window->tab, FALSE, TRUE, RGB(0,0,0));
@@ -1119,6 +1130,7 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 	LPSTR tag;
 	BOOL ret = TRUE;
 	LPARAM bFindCssEnd = FALSE;
+
 	GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&tag, NULL);
 	GetCustomTaskVar(task, PARSE_CSS_IN_FIND_END_TASK, (LPARAM far *)&bFindCssEnd, NULL);
 
@@ -1166,7 +1178,7 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
 	return ret;
 }
 
-BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL eof) {
+BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far * far *buff, int len, BOOL eof) {
 	DomNode far *currNode;
 	LPARAM state;
 	LPARAM bInComment = FALSE;
@@ -1189,6 +1201,8 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 	char far *end = *buff + len;
 	
 	(*buff)[len] = '\0';
+	//DebugLog(window->tab, "%s", *buff);
+	//return TRUE;
 	//MessageBox(window->hWnd, *buff, "chunk", MB_OK);
 	
 	GetCustomTaskVar(task, PARSE_DOM_VAR_STATE, &state, NULL);
@@ -1211,6 +1225,13 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, i
 			lpCurrValueStart = *buff;
 			break;
 	}
+	
+	/*while (ptr < end) {
+		*ptr = '.';
+		ptr++;
+	}
+	DebugLog(window->tab, "%s", *buff);
+	return TRUE;*/
 	
 	for (;;) {
 		

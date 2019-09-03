@@ -11,15 +11,17 @@
 
 typedef struct Stream Stream;
 
-typedef far int (* stream_read)(Stream far *stream, char near *buff, int len);
-typedef far BOOL (* stream_eof)(Stream far *stream);
-typedef far BOOL (* stream_close)(Stream far *stream);
+typedef far int (far * stream_read)(Stream far *stream, char far *buff, int len);
+typedef far BOOL (far * stream_eof)(Stream far *stream);
+typedef far BOOL (far * stream_close)(Stream far *stream);
+typedef far BOOL (far * stream_hasData)(Stream far *stream);
 
 typedef struct Stream {
 	int type;
 	stream_read read;
 	stream_eof eof;
 	stream_close close;
+	stream_hasData hasData;
 	ContentWindow far *window;
 	Task far *task;
 } Stream;
@@ -60,23 +62,40 @@ BOOL far EOFstream_FILE(Stream far *stream) {
 	return feof(((Stream_FILE far *)stream)->fp);
 }
 
+BOOL far hasDataStream_FILE(Stream far *stream) {
+	return !feof(((Stream_FILE far *)stream)->fp);
+}
+
 BOOL far closeStream_FILE(Stream far *stream) {
 	return fclose(((Stream_FILE far *)stream)->fp);
 }
 
-int far readStream_HTTP(Stream far *stream, char near *buff, int len) {
-	LPARAM read_chunk_ptr;
 
-	if (! GetCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0, &read_chunk_ptr)) {
+
+int far readStream_HTTP(Stream far *stream, char far *buff, int len) {
+	LPARAM read_chunk_ptr;
+	
+	//DebugLog(NULL, "\nread1\n");
+
+	if (! GetCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0, (LPARAM far *)&read_chunk_ptr)) {
+		//DebugLog(NULL, "\nread2\n");
 		return 0;
 	}
 	
+	//DebugLog(NULL, "\nread3\n");
 	lstrcpy(buff, (LPSTR)read_chunk_ptr);
 	
 	GlobalFree((HGLOBAL)read_chunk_ptr);
+	//DebugLog(NULL, "\nread4\n");
 	RemoveCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0);
 	
+	//DebugLog(NULL, "\nread5\n");
+	
 	return lstrlen(buff);
+}
+
+BOOL far hasDataStream_HTTP(Stream far *stream) {
+	return GetNumCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR);
 }
 
 BOOL far EOFstream_HTTP(Stream far *stream) {
@@ -150,6 +169,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 			ret->stream.read = readStream_HTTP;
 			ret->stream.eof = EOFstream_HTTP;
 			ret->stream.close = closeStream_HTTP;
+			ret->stream.hasData = hasDataStream_HTTP;
 			ret->stream.window = window;
 			ret->stream.task = task;
 			ret->http->url_info = url_info;
@@ -181,6 +201,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 			ret->stream.read = readStream_FILE;
 			ret->stream.eof = EOFstream_FILE;
 			ret->stream.close = closeStream_FILE;
+			ret->stream.hasData = hasDataStream_FILE;
 			ret->stream.window = window;
 			ret->stream.task = task;
 			return (Stream far *)ret;

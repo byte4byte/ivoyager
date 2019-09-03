@@ -6,7 +6,7 @@
 
 #ifdef WIN3_1
 
-static void far *GAlloc(int len) {
+static void far *GAlloc(DWORD len) {
 	void far *ret = (void far *)GlobalLock(GlobalAlloc(GMEM_FIXED, len));
 	if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
 	return ret;
@@ -47,13 +47,24 @@ static void LFree(HLOCAL ptr) {
 static LPSTR ConcatVar(Task far *task, DWORD id, LPSTR str) {
 	LPSTR prev_str;
 	LPSTR new_str;
+	if (! str) MessageBox(NULL, "NULL STRING", "", MB_OK);
 	GetCustomTaskVar(task, id, (LPARAM far *)&prev_str, NULL);
 	if (prev_str) {
+		LPSTR p, p2;
 		int len = lstrlen(prev_str);
 		len += lstrlen(str);
 		new_str = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
 		lstrcpy(new_str, prev_str);
-		_fstrcat(new_str, str);
+		lstrcat(new_str, str);
+		/*p = new_str;
+		while (*p) { p++; }
+		p2 = str;
+		while (*p2) {
+			*p = *p2;
+			p2++;
+		}
+		*p = '\0';*/
+		//lstrcat(new_str, str);
 		AddCustomTaskVar(task, id, (LPARAM)new_str);
 		GlobalFree((HGLOBAL)prev_str);
 	}

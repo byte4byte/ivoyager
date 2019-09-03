@@ -175,6 +175,10 @@ void printTaskData(Task far *task) {
 
 BOOL  AddCustomTaskData(Task far *task, DWORD id, LPARAM var, BYTE type) {
 	TaskData far *curr;
+	
+	//if (id == 100) {
+	//	DebugLog(NULL, "\nmode change: %ld\n", var);
+	//}
 
 	if (SetCustomTaskData(task, id, var, type)) return TRUE;
 

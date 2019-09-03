@@ -46,7 +46,7 @@ void WriteSource(Tab far *tab, LPSTR raw, int len) {
 	int ndx;
 
        //	return;
-
+#if 0
 	ndx = GetWindowTextLength (tab->hSource);
 	SetFocus(tab->hSource);
 	#ifdef WIN32
@@ -55,7 +55,20 @@ void WriteSource(Tab far *tab, LPSTR raw, int len) {
 	  SendMessage(tab->hSource, EM_SETSEL, 0, MAKELONG (ndx, ndx));
 	#endif
 	SendMessage(tab->hSource, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) raw));
+	#endif
+        {
+	char near *ptr = FarStrToNear(raw);
+	
+	/*fwrite(ptr, 1, len, fpSource);
+	fflush(fpSource);
+	fclose(fpSource);
+	fpSource = fopen("C:\\source.log", "a");*/
+	
+	LocalFree((HLOCAL)ptr);
+	}
 }
+
+
 
 void DebugLog(Tab far *tab, LPSTR format, ...) {
 	int ndx;
@@ -82,7 +95,7 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 	buffer = (char*)malloc( len * sizeof(char) );
 
 	wvsprintf( buffer, format, args ); // C4996
-
+#if 0
 	ndx = GetWindowTextLength (tab->hConsole);
 	SetFocus(tab->hConsole);
 	#ifdef WIN32
@@ -91,6 +104,12 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 	  SendMessage(tab->hConsole, EM_SETSEL, 0, MAKELONG (ndx, ndx));
 	#endif
 	SendMessage(tab->hConsole, EM_REPLACESEL, 0, (LPARAM) ((LPSTR) buffer));
+#endif
+	
+	/*fwrite(buffer, 1, strlen(buffer), fpLog);
+	fflush(fpLog);
+	fclose(fpLog);
+	fpLog = fopen("C:\\out.log", "a");*/
 
 	free(buffer);
 	va_end(args);
@@ -1244,6 +1263,27 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+int SetSocketBufferSize (SOCKET sd, int option, int size)
+{                                          
+   int bsize = size, ssize = 0, sor = sizeof (int);
+
+   getsockopt (sd, SOL_SOCKET, option, (LPSTR) & ssize, & sor);
+
+   if (ssize >= size) {
+      return ssize;
+   } else sor = sizeof (int);
+   
+   if (setsockopt (sd, SOL_SOCKET, option, (LPSTR) & bsize, sor) != SOCKET_ERROR) {
+      if (getsockopt (sd, SOL_SOCKET, option, (LPSTR) & ssize, & sor) != SOCKET_ERROR) {
+         if (ssize >= size)
+            return (ssize);
+      }
+   }
+
+   return 0;
+   //return (option == SO_SNDBUF ? WS_WRITE_SIZE : WS_READ_BUFFER);
+} 
+
 LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static HWND innerShell;
 	switch (msg) {
@@ -1271,6 +1311,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             case FD_CONNECT:
                  //G_con = 1;
 				 // todo: set status on task to success
+				 SetSocketBufferSize(ss->s, SO_RCVBUF, BUFFER_SIZE-2);
 				 HttpGet((Stream_HTTP far *)ss->stream);
 				 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_SUCCESS);
                  SetStatusText(ss->stream->window->tab, "Connection successful");
@@ -1283,20 +1324,22 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  len = strlen(G_out);
                  send(G_s, (char far *)G_out, len, SO_DONTROUTE);*/
                  return 0;
-
             case FD_READ: {
 				char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
-				int ret = recv(ss->s, buff, BUFFER_SIZE-1, 0);
-				if (ret > 0) {
-					BOOL headersParsed = FALSE;
-					buff[ret] = '\0';
-					WriteSource(ss->stream->window->tab, buff, ret);
-					HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed);
-					if (headersParsed) {
-						
+				//for (;;) {
+					int ret = recv(ss->s, buff, BUFFER_SIZE-2, 0);
+					if (ret == SOCKET_ERROR) break;
+					if (ret > 0) {
+						BOOL headersParsed = FALSE;
+						buff[ret] = '\0';
+						WriteSource(ss->stream->window->tab, buff, ret);
+						HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed);
+						if (headersParsed) {
+							
+						}
+						//DebugLog(ss->stream->window->tab, "%s", buff);
 					}
-					//DebugLog(ss->stream->window->tab, "%s", buff);
-				}
+				//}
 				GlobalFree((HGLOBAL)buff);
                  /*if (!G_con) return NULL;
                  MSG("Receiving data...")

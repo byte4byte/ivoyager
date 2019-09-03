@@ -105,6 +105,6 @@ typedef struct DomNode {
 	//calc on read: innerText: "hi"
 } DomNode;
 
-BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far **buff, int len, BOOL end);
+BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far * far *buff, int len, BOOL end);
 
 #endif

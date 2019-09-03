@@ -145,7 +145,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 					while (*p) {
 						if (*p == '\n') {
 							LPARAM chunk_size;
-                                                        LPSTR fullsize;
+                            LPSTR fullsize;
 							*p = '\0';
 							//MessageBox(browserWin, "here", "", MB_OK);
 							fullsize = Trim(ConcatVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_VAR, buff), 1, 1);
@@ -181,7 +181,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 				if (chunk_state == CHUNK_STATE_DATA) {
 					LPARAM chunk_size;
 					GetCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, &chunk_size, NULL);
-					if (chunk_size >= len) {
+					if (chunk_size > len) {
 						
 						LPSTR ptr = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(buff)+1);
 						lstrcpy(ptr, buff);
@@ -199,12 +199,13 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 						AddCustomTaskListData(stream->chunksTask, HTTP_CHUNK_LIST_VAR, (LPARAM)ptr);
 						buff[chunk_size] = chRestore;
 						
-						buff += (chunk_size+1);
-						len -= (chunk_size+1);
+						buff += (chunk_size);
+						len -= (chunk_size);
 						chunk_state = CHUNK_STATE_SIZE;
 						AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_STATE_VAR, (LPARAM)chunk_state);
 						chunk_size = 0;
 						AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
+						//if (len <= 0) break;
 					}
 				}
 			}
