@@ -1,0 +1,17 @@
+task.h(71): Warning! W138: No newline at end of file
+dom.h(110): Warning! W138: No newline at end of file
+tabs.h(37): Warning! W138: No newline at end of file
+utils.c(13): Warning! W136: Comparison equivalent to 'unsigned == 0'
+utils.c(15): Warning! W136: Comparison equivalent to 'unsigned == 0'
+utils.c(57): Warning! W202: Symbol 'p2' has been defined, but not referenced
+utils.c(57): Warning! W202: Symbol 'p' has been defined, but not referenced
+utils.c(325): Warning! W131: No prototype found for function 'abs'
+url.c(194): Warning! W131: No prototype found for function 'atoi'
+tests/taskdata.c(123): Warning! W138: No newline at end of file
+tests/path.c(17): Warning! W138: No newline at end of file
+utils.c(86): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
+utils.c(155): Warning! W202: Symbol 'NearStrToFar' has been defined, but not referenced
+utils.c(130): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced
+utils.c(142): Warning! W202: Symbol 'NearPtrToFar' has been defined, but not referenced
+utils.c(216): Warning! W202: Symbol '_ffopen' has been defined, but not referenced
+\main.c(43): Warning! W202: Symbol 'hTopBrowserWnd' has been defined, but not referenced

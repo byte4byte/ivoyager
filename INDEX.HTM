@@ -1,58 +1,748 @@
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
-<hr />
-<bold/>
-<mytag value/>
-<testing value=hi/>
-<testing2 value=hi2 />
-<input / autocomplete>
-<head><title>blah</title></head>
-<style>
-	body {
-		background-color: black;
+<head>
+<title>Gamer.Build - Play Games Online</title>	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+	<link rel="stylesheet" type="text/css" href="/styles.css">
+	<meta name="description" content="Build your own Video Games">
+	<meta name="keywords" content="Make,videogame,game,build,zzt,playonline,webchars,charcode,byte4byte,play online games,mobile games,web games">
+	<meta name="author" content="Byte4Byte">
+	<meta name="msvalidate.01" content="B818C006C3E4ADA5DA1106C33249F4F2" />
+	<script type="text/javascript" src="/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" src="/jquery.blockUI.js"></script>
+	<script type="text/javascript">
+	$.fn.resizeiframe=function(){
+		$(this).load(function() {
+			$(this).height( $(this).contents().find("body").height() + 30);
+							$(this).attr('verticalscrolling', 'no').attr('scrolling', 'no').css("overflow", "hidden").css("scroll-y", "hidden");
+					});
+		$(this).click(function() {
+			$(this).height( $(this).contents().find("body").height() + 30 );
+		});
+
 	}
-	
-	#p1 {background-color: rgba(255, 0, 0, 0.3);}   /* red with opacity */
-	#p2 {background-color: rgba(0, 255, 0, 0.3);}   /* green with opacity */
-#p3 {background-color: rgba(0, 0, 255, 0.3);}   /* blue with opacity */
-	
-	mytag[attr=",\"\fd"][b="</b>"] /* t e s t */ { /* yo */
-			/*my conment			*/
-		color: white; /*  Comment 1 */
-	}
-/* my comment */@media (max-width: </u>12450px), print /*1*/{/* 2 */	
-	a[href="fg"],fd {
-		background-image: url('dssdsd}');
-		color: url(''); background-color: rgba(255,192, 203, 0.5)
-		text-align: left;
-	}
-}
-
-@keyframes slidein {
-  from {
-    margin-left: 100%;
-    width: 300%;
-  }
-
-  to {
-    margin-left: 0%;
-    width: 100%;
-  }
-}
-
-</style>
-
-html>div * {
-	font-size: 24 px;
-}
-</style>
-<body bgcolor="#000000">
-<B><i>hi</i></b>
+	$(document).ready(function() {
+		$('iframe').resizeiframe();
+	});
+	$(window).resize(function() {
+		$('iframe').each(function() {
+					$(this).height( $(this).contents().find("body").height() + 16);
+							$(this).attr('verticalscrolling', 'no').attr('scrolling', 'no').css("overflow", "hidden").css("scroll-y", "hidden");
+			
+		});	
+	});
+	$(document).ready(function() {
+		$(".launchgame").click(function() {
+			var gameid = $(this).attr('gameid');
+			$.ajax( { url: "/service/updateviews.php?ID=" + $(this).attr('gameid'), 
+				cache: false,
+				dataType: "json", 
+				data: {},
+				success: function( data ) {		
+					$(".gameviews[gameid=" + gameid + "]").text(data);
+				}
+			});
+		});
+		
+		$(".makegame").bind('touchstart', function(e) {
+			e.preventDefault();
+			window.open("http://webchars.com/edit.php?mobile=1", "_blank");
+		});
+	});
+	</script>
+</head>
+<body>
+	<section id="content">
+		<header class="page_width">
+			<div id="logo_block">
+				<img src="/images/gamersb-logo.png" id="logo" /><!--<img src="/images/build2.png" id="logo" /><span id="logo_text"> What will <span class="important">you</span> build?</span>-->
+			</div>
+			<nav id="login_nav">				<a id="loginlink" href="/login?ret=%2Fgames%3F" >Log in</a>
+				<a href="/signup?ret=%2Fgames%3F" >Sign up</a>
+			</nav>
+			<nav id="main_nav">
+				<span>
+<a href="/news" >News</a><a href="/games" class="selected">Play Games</a><a class="makegame" href="http://webchars.com/edit.php" target="_blank">Make a Game</a><a href="/manual" >Manual</a><a href="/forum" >Forum</a>
+				</span>
+			</nav>
+		</header>
+		<div id="main" class="page_width games"><div id="banner_container" class="ad"><div id="bannerad">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- VideoGame.Build -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2824278394433915"
+     data-ad-slot="7747374581"
+     data-ad-format="auto"></ins>
 <script>
-sdsd();
-alert("b");
-<b a="val">Patrick</script>
-<script>
-console.log(document.childNodes);
+(adsbygoogle = window.adsbygoogle || []).push({});
 </script>
-</html>EOF
+</div></div>
+<div id="maintable">
+</script>		
+			<script type="text/javascript">
+	$(document).ready(function() {
+		$(".ratelink").click(function(e) {
+			e.preventDefault();
+			location.href = $("#loginlink").attr('href');
+		});
+	});
+</script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#filter").change(function() {
+			location.href = "/games/page/0/filter/" + $(this).val();
+		}).val('2');
+	});
+	
+	$(document).on('mouseover', '.ratestar', function() {
+		$(this).addClass("hilite").prevAll('.ratestar').addClass("hilite");
+	}).on('mouseout', '.ratestar', function() {
+		$(".ratestar").removeClass("hilite");
+	}).on('click', '.ratestar', function() {
+		
+		var rating = $(this).attr('stars');
+		
+		$.ajax( { url: "/service/rategame.php", 
+				cache: false,
+				dataType: "json", 
+				data: { gameid: currGame, rating: rating },
+				success: function( data ) {		
+					
+				}
+			});
+		
+		
+		$.unblockUI(); 
+	});
+</script>
+<section id="leftcolumn" class="full nonforum">
+<div id="ratebox" style="display:none; cursor: default; padding: 20px;"> 
+        <p align="center">Rate: <span id="rategamename"></span></p>
+        <span class="ratestar" stars="1">*</span><span class="ratestar" stars="2">*</span><span class="ratestar" stars="3">*</span><span stars="4" class="ratestar">*</span><span stars="5" class="ratestar">*</span>
+</div> 
+				<h1>Featured Games</h1>
+				<p>
+					Browse through games from the past and present. Want your creation listed here? Then go ahead and <a class="makegame" href="http://webchars.com/edit.php" target="_blank">build your own video game</a>!
+				</p>
+				<p align="center">
+				<select id="filter">
+					<option value="2">Top Rated Games</option>
+					<option value="0">No Filter</option>
+					<option value="1">#</option>
+					<option value="A">A</option>
+					<option value="B">B</option>
+					<option value="C">C</option>
+					<option value="D">D</option>
+					<option value="E">E</option>
+					<option value="F">F</option>
+					<option value="G">G</option>
+					<option value="H">H</option>
+					<option value="I">I</option>
+					<option value="J">J</option>
+					<option value="K">K</option>
+					<option value="L">L</option>
+					<option value="M">M</option>
+					<option value="N">N</option>
+					<option value="O">O</option>
+					<option value="P">P</option>
+					<option value="Q">Q</option>
+					<option value="R">R</option>
+					<option value="S">S</option>
+					<option value="T">T</option>
+					<option value="U">U</option>
+					<option value="V">V</option>
+					<option value="W">W</option>
+					<option value="X">X</option>
+					<option value="Y">Y</option>
+					<option value="Z">Z</option>
+				</select> &nbsp;&nbsp; 2,870 results.</p>
+        <section class="graybox" id="gamelist2" style="display: none;">
+									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="13532" href="http://gamer.build/BURGERJ.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13532.png" width="100" height="100" class="game_thumbnail" alt="BURGERJ.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13532" href="http://gamer.build/BURGERJ.ZZT" target="_blank"><span gameid="13532" class="game_name">BURGERJ.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13532" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">2 votes<br><span class="gameviews" gameid="13532">258</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12302" href="http://gamer.build/COOLNESS.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12302.png" width="100" height="100" class="game_thumbnail" alt="COOLNESS.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12302" href="http://gamer.build/COOLNESS.ZZT" target="_blank"><span gameid="12302" class="game_name">COOLNESS.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12302" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">2 votes<br><span class="gameviews" gameid="12302">198</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="13346" href="http://gamer.build/ADVLINK2.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13346.png" width="100" height="100" class="game_thumbnail" alt="ADVLINK2.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13346" href="http://gamer.build/ADVLINK2.ZZT" target="_blank"><span gameid="13346" class="game_name">ADVLINK2.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13346" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="13346">334</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="14449" href="http://gamer.build/AMULET.ZZT" target="_blank"><img src="" width="100" height="100" class="game_thumbnail" alt="AMULET.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14449" href="http://gamer.build/AMULET.ZZT" target="_blank"><span gameid="14449" class="game_name">AMULET.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14449" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14449">28</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="14123" href="http://gamer.build/BRANDON1.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14123.png" width="100" height="100" class="game_thumbnail" alt="BRANDON1.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14123" href="http://gamer.build/BRANDON1.ZZT" target="_blank"><span gameid="14123" class="game_name">BRANDON1.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14123" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14123">106</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11799" href="http://gamer.build/TOWN.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11799.png" width="100" height="100" class="game_thumbnail" alt="TOWN.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11799" href="http://gamer.build/TOWN.ZZT" target="_blank"><span gameid="11799" class="game_name">TOWN.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11799" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="11799">238</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="14342" href="http://gamer.build/WARTORN.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14342.png" width="100" height="100" class="game_thumbnail" alt="WARTORN.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14342" href="http://gamer.build/WARTORN.ZZT" target="_blank"><span gameid="14342" class="game_name">WARTORN.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14342" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14342">29</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12521" href="http://gamer.build/KAVE.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12521.png" width="100" height="100" class="game_thumbnail" alt="KAVE.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12521" href="http://gamer.build/KAVE.ZZT" target="_blank"><span gameid="12521" class="game_name">KAVE.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12521" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">**** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="12521">11</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="11850" href="http://gamer.build/!-.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11850.png" width="100" height="100" class="game_thumbnail" alt="!-.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11850" href="http://gamer.build/!-.ZZT" target="_blank"><span gameid="11850" class="game_name">!-.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11850" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11850">12</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13438" href="http://gamer.build/!24HZWIL.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13438.png" width="100" height="100" class="game_thumbnail" alt="!24HZWIL.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13438" href="http://gamer.build/!24HZWIL.ZZT" target="_blank"><span gameid="13438" class="game_name">!24HZWIL.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13438" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13438">16</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12934" href="http://gamer.build/!STRNDED.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12934.png" width="100" height="100" class="game_thumbnail" alt="!STRNDED.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12934" href="http://gamer.build/!STRNDED.ZZT" target="_blank"><span gameid="12934" class="game_name">!STRNDED.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12934" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12934">7</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11653" href="http://gamer.build/#PLAY.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11653.png" width="100" height="100" class="game_thumbnail" alt="#PLAY.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11653" href="http://gamer.build/#PLAY.ZZT" target="_blank"><span gameid="11653" class="game_name">#PLAY.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11653" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11653">15</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12628" href="http://gamer.build/$(sic).zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12628.png" width="100" height="100" class="game_thumbnail" alt="$(sic).zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12628" href="http://gamer.build/$(sic).zzt" target="_blank"><span gameid="12628" class="game_name">$(sic).zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12628" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12628">3</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13989" href="http://gamer.build/$BULLY.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13989.png" width="100" height="100" class="game_thumbnail" alt="$BULLY.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13989" href="http://gamer.build/$BULLY.ZZT" target="_blank"><span gameid="13989" class="game_name">$BULLY.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13989" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13989">14</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12417" href="http://gamer.build/$Daymare.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12417.png" width="100" height="100" class="game_thumbnail" alt="$Daymare.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12417" href="http://gamer.build/$Daymare.zzt" target="_blank"><span gameid="12417" class="game_name">$Daymare.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12417" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12417">15</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="14250" href="http://gamer.build/$dpd.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14250.png" width="100" height="100" class="game_thumbnail" alt="$dpd.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14250" href="http://gamer.build/$dpd.zzt" target="_blank"><span gameid="14250" class="game_name">$dpd.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14250" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="14250">6</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12859" href="http://gamer.build/$GTAZZT.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12859.png" width="100" height="100" class="game_thumbnail" alt="$GTAZZT.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12859" href="http://gamer.build/$GTAZZT.ZZT" target="_blank"><span gameid="12859" class="game_name">$GTAZZT.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12859" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12859">31</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13054" href="http://gamer.build/$LLLAND.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13054.png" width="100" height="100" class="game_thumbnail" alt="$LLLAND.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13054" href="http://gamer.build/$LLLAND.ZZT" target="_blank"><span gameid="13054" class="game_name">$LLLAND.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13054" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13054">6</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12128" href="http://gamer.build/$Lost.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12128.png" width="100" height="100" class="game_thumbnail" alt="$Lost.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12128" href="http://gamer.build/$Lost.zzt" target="_blank"><span gameid="12128" class="game_name">$Lost.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12128" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12128">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13594" href="http://gamer.build/$Matrix.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13594.png" width="100" height="100" class="game_thumbnail" alt="$Matrix.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13594" href="http://gamer.build/$Matrix.zzt" target="_blank"><span gameid="13594" class="game_name">$Matrix.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13594" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13594">10</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="11607" href="http://gamer.build/$MWENC_A.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11607.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_A.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11607" href="http://gamer.build/$MWENC_A.ZZT" target="_blank"><span gameid="11607" class="game_name">$MWENC_A.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11607" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11607">10</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12590" href="http://gamer.build/$MWENC_B.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12590.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_B.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12590" href="http://gamer.build/$MWENC_B.ZZT" target="_blank"><span gameid="12590" class="game_name">$MWENC_B.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12590" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12590">2</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="11917" href="http://gamer.build/$MWENC_C.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11917.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_C.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11917" href="http://gamer.build/$MWENC_C.ZZT" target="_blank"><span gameid="11917" class="game_name">$MWENC_C.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11917" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11917">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13147" href="http://gamer.build/$NOMA-DE.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13147.png" width="100" height="100" class="game_thumbnail" alt="$NOMA-DE.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13147" href="http://gamer.build/$NOMA-DE.ZZT" target="_blank"><span gameid="13147" class="game_name">$NOMA-DE.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13147" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13147">5</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="14177" href="http://gamer.build/$pop.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14177.png" width="100" height="100" class="game_thumbnail" alt="$pop.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14177" href="http://gamer.build/$pop.zzt" target="_blank"><span gameid="14177" class="game_name">$pop.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14177" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="14177">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11842" href="http://gamer.build/$Rup-Pig.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11842.png" width="100" height="100" class="game_thumbnail" alt="$Rup-Pig.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11842" href="http://gamer.build/$Rup-Pig.zzt" target="_blank"><span gameid="11842" class="game_name">$Rup-Pig.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11842" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11842">10</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="13843" href="http://gamer.build/$SSCRYPT.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13843.png" width="100" height="100" class="game_thumbnail" alt="$SSCRYPT.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13843" href="http://gamer.build/$SSCRYPT.ZZT" target="_blank"><span gameid="13843" class="game_name">$SSCRYPT.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13843" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13843">8</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13779" href="http://gamer.build/$TENNIS.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13779.png" width="100" height="100" class="game_thumbnail" alt="$TENNIS.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13779" href="http://gamer.build/$TENNIS.ZZT" target="_blank"><span gameid="13779" class="game_name">$TENNIS.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13779" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13779">10</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols2">					<span class="game_block">
+						<a class="launchgame" gameid="12971" href="http://gamer.build/(S).zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12971.png" width="100" height="100" class="game_thumbnail" alt="(S).zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12971" href="http://gamer.build/(S).zzt" target="_blank"><span gameid="12971" class="game_name">(S).zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12971" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12971">5</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12264" href="http://gamer.build/--ADV2--.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12264.png" width="100" height="100" class="game_thumbnail" alt="--ADV2--.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12264" href="http://gamer.build/--ADV2--.ZZT" target="_blank"><span gameid="12264" class="game_name">--ADV2--.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12264" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12264">15</span> Views</span>
+						</span>
+					</span>
+					</div>													</section>
+				<section class="graybox" id="gamelist">
+									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="13532" href="http://gamer.build/BURGERJ.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13532.png" width="100" height="100" class="game_thumbnail" alt="BURGERJ.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13532" href="http://gamer.build/BURGERJ.ZZT" target="_blank"><span gameid="13532" class="game_name">BURGERJ.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13532" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">2 votes<br><span class="gameviews" gameid="13532">258</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12302" href="http://gamer.build/COOLNESS.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12302.png" width="100" height="100" class="game_thumbnail" alt="COOLNESS.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12302" href="http://gamer.build/COOLNESS.ZZT" target="_blank"><span gameid="12302" class="game_name">COOLNESS.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12302" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">2 votes<br><span class="gameviews" gameid="12302">198</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13346" href="http://gamer.build/ADVLINK2.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13346.png" width="100" height="100" class="game_thumbnail" alt="ADVLINK2.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13346" href="http://gamer.build/ADVLINK2.ZZT" target="_blank"><span gameid="13346" class="game_name">ADVLINK2.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13346" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="13346">334</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="14449" href="http://gamer.build/AMULET.ZZT" target="_blank"><img src="" width="100" height="100" class="game_thumbnail" alt="AMULET.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14449" href="http://gamer.build/AMULET.ZZT" target="_blank"><span gameid="14449" class="game_name">AMULET.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14449" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14449">28</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="14123" href="http://gamer.build/BRANDON1.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14123.png" width="100" height="100" class="game_thumbnail" alt="BRANDON1.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14123" href="http://gamer.build/BRANDON1.ZZT" target="_blank"><span gameid="14123" class="game_name">BRANDON1.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14123" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14123">106</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11799" href="http://gamer.build/TOWN.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11799.png" width="100" height="100" class="game_thumbnail" alt="TOWN.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11799" href="http://gamer.build/TOWN.ZZT" target="_blank"><span gameid="11799" class="game_name">TOWN.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11799" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="11799">238</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="14342" href="http://gamer.build/WARTORN.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14342.png" width="100" height="100" class="game_thumbnail" alt="WARTORN.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14342" href="http://gamer.build/WARTORN.ZZT" target="_blank"><span gameid="14342" class="game_name">WARTORN.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14342" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">***** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="14342">29</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12521" href="http://gamer.build/KAVE.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12521.png" width="100" height="100" class="game_thumbnail" alt="KAVE.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12521" href="http://gamer.build/KAVE.ZZT" target="_blank"><span gameid="12521" class="game_name">KAVE.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12521" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating">**** </span>
+							<span class="game_views">1 votes<br><span class="gameviews" gameid="12521">11</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11850" href="http://gamer.build/!-.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11850.png" width="100" height="100" class="game_thumbnail" alt="!-.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11850" href="http://gamer.build/!-.ZZT" target="_blank"><span gameid="11850" class="game_name">!-.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11850" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11850">12</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="13438" href="http://gamer.build/!24HZWIL.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13438.png" width="100" height="100" class="game_thumbnail" alt="!24HZWIL.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13438" href="http://gamer.build/!24HZWIL.ZZT" target="_blank"><span gameid="13438" class="game_name">!24HZWIL.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13438" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13438">16</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12934" href="http://gamer.build/!STRNDED.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12934.png" width="100" height="100" class="game_thumbnail" alt="!STRNDED.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12934" href="http://gamer.build/!STRNDED.ZZT" target="_blank"><span gameid="12934" class="game_name">!STRNDED.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12934" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12934">7</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11653" href="http://gamer.build/#PLAY.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11653.png" width="100" height="100" class="game_thumbnail" alt="#PLAY.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11653" href="http://gamer.build/#PLAY.ZZT" target="_blank"><span gameid="11653" class="game_name">#PLAY.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11653" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11653">15</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="12628" href="http://gamer.build/$(sic).zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12628.png" width="100" height="100" class="game_thumbnail" alt="$(sic).zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12628" href="http://gamer.build/$(sic).zzt" target="_blank"><span gameid="12628" class="game_name">$(sic).zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12628" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12628">3</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13989" href="http://gamer.build/$BULLY.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13989.png" width="100" height="100" class="game_thumbnail" alt="$BULLY.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13989" href="http://gamer.build/$BULLY.ZZT" target="_blank"><span gameid="13989" class="game_name">$BULLY.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13989" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13989">14</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12417" href="http://gamer.build/$Daymare.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12417.png" width="100" height="100" class="game_thumbnail" alt="$Daymare.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12417" href="http://gamer.build/$Daymare.zzt" target="_blank"><span gameid="12417" class="game_name">$Daymare.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12417" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12417">15</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="14250" href="http://gamer.build/$dpd.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14250.png" width="100" height="100" class="game_thumbnail" alt="$dpd.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14250" href="http://gamer.build/$dpd.zzt" target="_blank"><span gameid="14250" class="game_name">$dpd.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14250" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="14250">6</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12859" href="http://gamer.build/$GTAZZT.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12859.png" width="100" height="100" class="game_thumbnail" alt="$GTAZZT.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12859" href="http://gamer.build/$GTAZZT.ZZT" target="_blank"><span gameid="12859" class="game_name">$GTAZZT.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12859" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12859">31</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13054" href="http://gamer.build/$LLLAND.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13054.png" width="100" height="100" class="game_thumbnail" alt="$LLLAND.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13054" href="http://gamer.build/$LLLAND.ZZT" target="_blank"><span gameid="13054" class="game_name">$LLLAND.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13054" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13054">6</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="12128" href="http://gamer.build/$Lost.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12128.png" width="100" height="100" class="game_thumbnail" alt="$Lost.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12128" href="http://gamer.build/$Lost.zzt" target="_blank"><span gameid="12128" class="game_name">$Lost.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12128" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12128">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13594" href="http://gamer.build/$Matrix.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13594.png" width="100" height="100" class="game_thumbnail" alt="$Matrix.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13594" href="http://gamer.build/$Matrix.zzt" target="_blank"><span gameid="13594" class="game_name">$Matrix.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13594" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13594">10</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11607" href="http://gamer.build/$MWENC_A.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11607.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_A.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11607" href="http://gamer.build/$MWENC_A.ZZT" target="_blank"><span gameid="11607" class="game_name">$MWENC_A.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11607" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11607">10</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="12590" href="http://gamer.build/$MWENC_B.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12590.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_B.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12590" href="http://gamer.build/$MWENC_B.ZZT" target="_blank"><span gameid="12590" class="game_name">$MWENC_B.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12590" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12590">2</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11917" href="http://gamer.build/$MWENC_C.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11917.png" width="100" height="100" class="game_thumbnail" alt="$MWENC_C.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11917" href="http://gamer.build/$MWENC_C.ZZT" target="_blank"><span gameid="11917" class="game_name">$MWENC_C.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11917" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11917">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13147" href="http://gamer.build/$NOMA-DE.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13147.png" width="100" height="100" class="game_thumbnail" alt="$NOMA-DE.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13147" href="http://gamer.build/$NOMA-DE.ZZT" target="_blank"><span gameid="13147" class="game_name">$NOMA-DE.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13147" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13147">5</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="14177" href="http://gamer.build/$pop.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_14177.png" width="100" height="100" class="game_thumbnail" alt="$pop.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="14177" href="http://gamer.build/$pop.zzt" target="_blank"><span gameid="14177" class="game_name">$pop.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="14177" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="14177">4</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="11842" href="http://gamer.build/$Rup-Pig.zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_11842.png" width="100" height="100" class="game_thumbnail" alt="$Rup-Pig.zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="11842" href="http://gamer.build/$Rup-Pig.zzt" target="_blank"><span gameid="11842" class="game_name">$Rup-Pig.zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="11842" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="11842">10</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="13843" href="http://gamer.build/$SSCRYPT.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13843.png" width="100" height="100" class="game_thumbnail" alt="$SSCRYPT.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13843" href="http://gamer.build/$SSCRYPT.ZZT" target="_blank"><span gameid="13843" class="game_name">$SSCRYPT.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13843" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13843">8</span> Views</span>
+						</span>
+					</span>
+					</div>									<div style="display: table-row;" class="cols3">					<span class="game_block">
+						<a class="launchgame" gameid="13779" href="http://gamer.build/$TENNIS.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_13779.png" width="100" height="100" class="game_thumbnail" alt="$TENNIS.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="13779" href="http://gamer.build/$TENNIS.ZZT" target="_blank"><span gameid="13779" class="game_name">$TENNIS.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="13779" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="13779">10</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12971" href="http://gamer.build/(S).zzt" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12971.png" width="100" height="100" class="game_thumbnail" alt="(S).zzt"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12971" href="http://gamer.build/(S).zzt" target="_blank"><span gameid="12971" class="game_name">(S).zzt</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12971" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12971">5</span> Views</span>
+						</span>
+					</span>
+																			<span class="game_block">
+						<a class="launchgame" gameid="12264" href="http://gamer.build/--ADV2--.ZZT" target="_blank"><img src="http://gamer.build/images/thumbnails/th_12264.png" width="100" height="100" class="game_thumbnail" alt="--ADV2--.ZZT"/></a>
+						<span class="game_info">
+							<a class="launchgame"  gameid="12264" href="http://gamer.build/--ADV2--.ZZT" target="_blank"><span gameid="12264" class="game_name">--ADV2--.ZZT</span></a>
+							<span class="game_author">Legacy <a href="#" gameid="12264" class="small ratelink">Rate Game</a></span>
+							<span class="game_rating"> </span>
+							<span class="game_views">0 votes<br><span class="gameviews" gameid="12264">15</span> Views</span>
+						</span>
+					</span>
+					</div>													</section>
+				<nav class="pages">
+									
+					<a class="selected"  href="/games/page/0">1</a>					
+									
+					<a  href="/games/page/1">2</a>					
+									
+					<a  href="/games/page/2">3</a>					
+									
+					<a  href="/games/page/3">4</a>					
+									
+					<a  href="/games/page/4">5</a>					
+									
+					<a  href="/games/page/5">6</a>					
+									
+					<a  href="/games/page/6">7</a>					
+									
+					<a  href="/games/page/7">8</a>					
+									
+					<a  href="/games/page/8">9</a>					
+									
+					<a  href="/games/page/9">10</a>					
+								</nav>
+			</section>			
+		</div>
+		</div>
+		<footer class="page_width">
+			<p align="center" style="visibility: hidden;"><a href="#">About</a><a href="#">Tutorials</a><a href="#">Manual</a></p>
+		</footer>
+	</section>
+<!-- Piwik -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//byte4byte.com/piwik/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', 8]);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript><p><img src="//byte4byte.com/piwik/piwik.php?idsite=8" style="border:0;" alt="" /></p></noscript>
+<!-- End Piwik Code -->	
+</body>
+</html>
