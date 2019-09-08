@@ -53,7 +53,7 @@ typedef struct Stream_HTTP {
         Stream stream; // must come first
         Task far *chunksTask;
         Stream_http far *http;
-		SocketStream *ss;
+                SocketStream *ss;
 } Stream_HTTP;
 
 int far readStream_FILE(Stream far *stream, char far *buff, int len) {
@@ -131,17 +131,20 @@ BOOL far closeStream_HTTP(Stream far *stream) {
 #define HTTP_HEADERS_VAR                1
     
         Stream_HTTP far *http_stream = (Stream_HTTP far *)stream;
-		
-		if (http_stream->ss)
-		{
-			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)http_stream->ss);
-			RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-			if (http_stream->ss->s != INVALID_SOCKET) closesocket(http_stream->ss->s);
-			http_stream->ss->s = INVALID_SOCKET;
-			GlobalFree((LPVOID)http_stream->ss);
-		}
-		
-        if (http_stream) FreeTempTask(http_stream->chunksTask);
+                
+                if (http_stream->ss)
+                {
+                        int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)http_stream->ss);
+                        RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+                        if (http_stream->ss->s != INVALID_SOCKET) closesocket(http_stream->ss->s);
+                        http_stream->ss->s = INVALID_SOCKET;
+                        GlobalFree((LPVOID)http_stream->ss);
+                }
+                
+        if (http_stream->chunksTask) {
+                        FreeCustomTaskListData(http_stream->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+                        FreeTempTask(http_stream->chunksTask);
+                }
         if (http_stream->http->parseHttpTask) {
             FreeCustomTaskListData(http_stream->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
             FreeTempTask(http_stream->http->parseHttpTask);
@@ -155,30 +158,30 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         SocketStream far *ss;
         
         AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CONNECTING);
-		
-		if (ret->ss) 
-		{
-			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
-			RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-			if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
-			ret->ss->s = INVALID_SOCKET;
-			GlobalFree((LPVOID)ret->ss);
-			ret->ss = NULL;
-		}
-		
-		if (ret) {
-			FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
-			FreeTempTask(ret->chunksTask);
-			ret->chunksTask = AllocTempTask();
-		}
+                
+                if (ret->ss) 
+                {
+                        int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
+                        RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+                        if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
+                        ret->ss->s = INVALID_SOCKET;
+                        GlobalFree((LPVOID)ret->ss);
+                        ret->ss = NULL;
+                }
+                
+                if (ret) {
+                        FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+                        FreeTempTask(ret->chunksTask);
+                        ret->chunksTask = AllocTempTask();
+                }
         
         
         new_url_info = GetUrlInfo(szUrl, ret->http->url_info);
-		
-		
-		FreeCustomTaskListData(ret->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
+                
+                
+                FreeCustomTaskListData(ret->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
         FreeUrlInfo(ret->http->url_info);
-		
+                
         GlobalFree((void far *)ret->http);
         
         ret->http = (Stream_http far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_http));
@@ -186,8 +189,8 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         
         ret->http->s = (SOCKET)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (ret->http->s == INVALID_SOCKET) {
-			GlobalFree((void far *)ret);
-			return FALSE;
+                        GlobalFree((void far *)ret);
+                        return FALSE;
         }
         //ret->stream.read = readStream_HTTP;
         //ret->stream.eof = EOFstream_HTTP;
@@ -201,9 +204,9 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         ss->s = ret->http->s;
         ss->stream = (Stream far *)ret;
         ss->getHostBuf = (char far *)GlobalAlloc(GMEM_FIXED, MAXGETHOSTSTRUCT);
-		
-		ret->ss = ss;
-		
+                
+                ret->ss = ss;
+                
         AddCustomTaskListData(g_socketsTask, VAR_STREAMS, (LPARAM)ss);
         
         WSAAsyncSelect(ret->http->s, browserWin, WM_FSOCKET,
@@ -245,9 +248,9 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                         ss->s = ret->http->s;
                         ss->stream = (Stream far *)ret;
                         ss->getHostBuf = (char far *)GlobalAlloc(GMEM_FIXED, MAXGETHOSTSTRUCT);
-						
-						ret->ss = ss;
-						
+                                                
+                                                ret->ss = ss;
+                                                
                         AddCustomTaskListData(g_socketsTask, VAR_STREAMS, (LPARAM)ss);
                         
                         WSAAsyncSelect(ret->http->s, browserWin, WM_FSOCKET,
@@ -292,5 +295,5 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 }
 
 BOOL closeStream(Stream far *stream) {
-	return stream->close(stream);
+        return stream->close(stream);
 }

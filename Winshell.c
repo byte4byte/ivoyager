@@ -1309,9 +1309,17 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                 case WM_FSOCKET: {
                         LPARAM ret;
                         SocketStream far *ss;
+#ifndef NOTHREADS
+	EnterCriticalSection(&sockcs);
+#endif
                         GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, s), sizeof(SOCKET), &ret);
                         ss = (SocketStream far *)ret;
-                        if (! ss) return 0;
+                        if (! ss) {
+#ifndef NOTHREADS
+	LeaveCriticalSection(&sockcs);
+#endif
+							return 0;
+						}
 
                         switch (WSAGETSELECTEVENT(lParam))
             {
@@ -1322,7 +1330,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                  HttpGet((Stream_HTTP far *)ss->stream);
                                  AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_SUCCESS);
                  SetStatusText(ss->stream->window->tab, "Connection successful");
-                 return 0;
+                 break;
 
             case FD_WRITE:
                  /*if (!G_con) return NULL;
@@ -1330,7 +1338,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  sprintf(G_out,"%s\r\n",G_name);
                  len = strlen(G_out);
                  send(G_s, (char far *)G_out, len, SO_DONTROUTE);*/
-                 return 0;
+                 break;
             case FD_READ: {
                                 char far *buff = (char far *)LocalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
                                 //for (;;) {
@@ -1356,7 +1364,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  G_query[ret] = 0;
                  PostMessage(hWnd,WM_QUERYDONE,0,0);*/
 
-                 return 0;
+                 break;
                         }
 
             case FD_CLOSE: {
@@ -1365,16 +1373,31 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  SetStatusText(ss->stream->window->tab, "Connection closed");
                                  if (connect_state != CONNECT_STATE_CONNECTING) AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
                                  //MessageBox(browserWin, "closed", "", MB_OK);
+								
+				if (ss->s != INVALID_SOCKET) closesocket(ss->s);
+				ss->s = INVALID_SOCKET;
+								 
                  //G_con = 0;
                  //closesocket(G_s);
-                 return 0;
+                 break;
                         }
             }
+			
+			#ifndef NOTHREADS
+				LeaveCriticalSection(&sockcs);
+			#endif
+
+			
                         return 0;
                 }
                 case WM_HOSTRESOLVED: {
                         LPARAM ret;
                         SocketStream far *ss;
+						
+#ifndef NOTHREADS
+	EnterCriticalSection(&sockcs);
+#endif
+
                         GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, hGetHostname), sizeof(HANDLE), &ret);
                         ss = (SocketStream far *)ret;
                         if (WSAGETASYNCERROR(lParam)) {
@@ -1385,6 +1408,9 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                         SetStatusText(ss->stream->window->tab, "Unable to resolve");
                                 }
                                 //MessageBox(hWnd, "Unable to resolve", "", MB_OK);
+			#ifndef NOTHREADS
+				LeaveCriticalSection(&sockcs);
+			#endif
                                 return 0;
                         }
                         //MessageBox(hWnd, "Resolved", "", MB_OK);
@@ -1407,10 +1433,16 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                         // todo: set status on task to failed
                                         AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);
                                         SetStatusText(ss->stream->window->tab, "Connect failed");
+			#ifndef NOTHREADS
+				LeaveCriticalSection(&sockcs);
+			#endif
                                         return 0;
                                 }
                                 SetStatusText(ss->stream->window->tab, "Connecting...");
                         }
+			#ifndef NOTHREADS
+				LeaveCriticalSection(&sockcs);
+			#endif
                         return 0;
                 }
                 case WM_SIZE: {

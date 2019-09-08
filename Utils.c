@@ -75,6 +75,63 @@ static void LFree(void far * ptr) {
 #define GlobalFree(x) GFree(x)
 
 #else
+	
+extern int g_cnt, lcntr;
+
+static LPSTR GAlloc(DWORD len) {
+        void far * ret = (void far *)GlobalAlloc(GMEM_FIXED, len);
+		//void *ret = (void *)malloc(len);
+        g_cnt++;
+        if (! ret) {
+            char buff[20];
+            wsprintf(buff, "%d", g_cnt);
+            OutputDebugString("GALLOC FAILED");
+			StackTrace();
+        }
+        return ret;
+/*        HANDLE hMem;
+        void far *ret;
+        hMem = GlobalAlloc(GMEM_FIXED, len);
+        if (! hMem) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
+        ret = (void far *)GlobalLock(hMem);
+        if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
+        return ret;*/
+}
+
+
+
+static void far *LAlloc(int len) {
+        void *ret = (void *)malloc(len);
+           
+        //void *ret = (void *)LocalAlloc(LMEM_FIXED, len);
+        lcntr++;
+        if (! ret) {
+            char buff[20];
+            wsprintf(buff, "%d", lcntr);
+            OutputDebugString("localalloc failed");
+            StackTrace();
+        }
+        return ret;
+}
+
+static void GFree(void far *ptr) {
+        g_cnt--;
+		//free(ptr);
+        GlobalFree(ptr);
+        //) MessageBox(NULL, "global free failed", "", MB_OK);
+//        if (GlobalFree(GlobalHandle((UINT)ptr)) != NULL) MessageBox(NULL, "global free failed", "", MB_OK);
+}
+
+static void LFree(void far * ptr) {
+        lcntr--;
+        free(ptr);
+        //LocalFree(ptr);
+}
+
+#define GlobalAlloc(x, y) GAlloc(y)
+#define LocalAlloc(x, y) LAlloc(y)
+#define LocalFree(x) LFree(x)
+#define GlobalFree(x) GFree(x)
         
 #define _fstricmp _stricmp
 #define _fmemmove memmove

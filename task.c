@@ -302,7 +302,7 @@ BOOL  FreeCustomTaskListData(Task far *task, DWORD id, int freemode) {
             TaskData far *lprev;
             TaskData far *lnode;
 
-            lstart = lnode = lprev = (TaskData far *)taskdata->data;
+            lstart = lnode = lprev = ((TaskData far *)taskdata->data);
             while (lnode) {
                 if (lnode->data) {
                     if (freemode == GFREE) GlobalFree((void far *)lnode->data);

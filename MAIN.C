@@ -52,7 +52,7 @@ static FILE *fpLog, *fpSource;
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
-static LPSTR g_szDefURL = "google.com";
+static LPSTR g_szDefURL = "gamers.build";
 
 typedef struct DownloadFileTaskParams {
         LPSTR  url;
@@ -70,6 +70,10 @@ typedef struct ParseCSSTaskParams {
 } ParseCSSTaskParams;
 
 #define TASK_LOADURL 1
+
+#ifndef NOTHREADS
+CRITICAL_SECTION sockcs;
+#endif
 
 BOOL RunOpenUrlTask(Task far *task) {
         typedef struct {
@@ -196,13 +200,14 @@ BOOL RunOpenUrlTask(Task far *task) {
                                         //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere4\n");
                                         read_chunk->eof = TRUE;
                                         read_chunk->read_buff[0] = '\0';
+										read_chunk->len = 0;
                                         addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
                                         SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
                                         //LocalFree((void far *)read_chunk);
                                         AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
                                         //MessageBox(browserWin, "EOF", "", MB_OK);
                                         DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
-                                        GlobalFree((void far *)read_chunk);
+                                        //GlobalFree((void far *)read_chunk);
                                 }
                                 else {
                                         //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere5\n");
@@ -244,16 +249,24 @@ BOOL RunOpenUrlTask(Task far *task) {
         //task->dwNextRun = (GetTickCount() + 5000);
         
         if (ret) { // free data
+#ifndef NOTHREADS
+	EnterCriticalSection(&sockcs);
+#endif
                 //MessageBox(g_TOP_WINDOW.hWnd, "free", "", MB_OK);
                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere9\n");
                 if (open_url_data) {
-                        if (open_url_data->stream) closeStream(open_url_data->stream);
-                        //FreeUrlInfo(open_url_data->url_info);
+                        if (open_url_data->stream) {
+							closeStream(open_url_data->stream);
+							GlobalFree(open_url_data->stream);
+						}
                         GlobalFree((void far *)open_url_data);
                 }
                 GlobalFree((void far *)((DownloadFileTaskParams far *)task->params)->url);
                 GlobalFree((void far *)task->params);
                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere10\n");
+#ifndef NOTHREADS
+	LeaveCriticalSection(&sockcs);
+#endif
         }
         return ret;
 }
@@ -414,6 +427,9 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         
         g_tabTask = AllocTempTask();
         g_socketsTask = AllocTempTask();
+#ifndef NOTHREADS
+	InitializeCriticalSection(&sockcs);
+#endif
         if (! WinsockStart()) {
                 MessageBox(NULL, "Unable to start winsock!", "", MB_OK);
                 return 1;

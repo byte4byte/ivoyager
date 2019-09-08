@@ -1,1 +1,1 @@
-gcc -O2 -o ivoyager.exe main.c task.c dom.c -mwindows -lcomctl32 -lWs2_32
+gcc -g -o ivoyager.exe main.c task.c dom.c -mwindows -lcomctl32 -lWs2_32

@@ -48,7 +48,7 @@ HttpHeader far *ParseHttpHeader(LPSTR szHeader) {
         HttpHeader far *header;
         
 		
-        header = (HttpHeader far *)GlobalAlloc(GMEM_FIXED, sizeof(HttpHeader) + lstrlen(szHeader) + 1);
+        header = (HttpHeader far *)LocalAlloc(GMEM_FIXED, sizeof(HttpHeader) + lstrlen(szHeader) + 1);
 		
 		header->szName = (LPSTR)header + sizeof(HttpHeader);
 		
@@ -203,7 +203,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         chunk_size = _fstrtoul(fullsize, NULL, 16);
                                                         AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
                                                         
-                                                        GlobalFree((void far *)fullsize);
+                                                        LocalFree((void far *)fullsize);
                                                         
                                                         
                                                         len -= ((p+1) - buff);
