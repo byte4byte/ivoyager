@@ -217,7 +217,7 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
                         lstrcpy(url_info->getvars, getvars);
                 }
                 
-                GlobalFree((HGLOBAL)tmp_url);
+                GlobalFree((void far *)tmp_url);
         }
         
         return url_info;
@@ -226,18 +226,18 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
 static  BOOL FreeUrlInfo(URL_INFO far *url_info) {
         if (url_info) {
                 if (url_info->path) {
-                        GlobalFree((HGLOBAL)url_info->path);
+                        GlobalFree((void far *)url_info->path);
                 }
                 if (url_info->domain) {
-                        GlobalFree((HGLOBAL)url_info->domain);
+                        GlobalFree((void far *)url_info->domain);
                 }
                 if (url_info->username) {
-                        GlobalFree((HGLOBAL)url_info->username);
+                        GlobalFree((void far *)url_info->username);
                 }
                 if (url_info->getvars) {
-                        GlobalFree((HGLOBAL)url_info->getvars);
+                        GlobalFree((void far *)url_info->getvars);
                 }
-                GlobalFree((HGLOBAL)url_info);
+                GlobalFree((void far *)url_info);
                 return TRUE;
         }
         return FALSE;

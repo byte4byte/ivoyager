@@ -31,7 +31,7 @@ BOOL FreeTab(Tab far *tab) {
 }
 
 BOOL SetTabTitle(Tab far *tab, LPSTR lpStr) {
-	if (tab->szTitle) GlobalFree((HGLOBAL)tab->szTitle);
+	if (tab->szTitle) GlobalFree((void far *)tab->szTitle);
 	tab->szTitle = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(lpStr)+1);
 	lstrcpy(tab->szTitle, lpStr);
 	RefreshShell();
@@ -39,14 +39,14 @@ BOOL SetTabTitle(Tab far *tab, LPSTR lpStr) {
 }
 
 BOOL SetTabStatus(Tab far *tab, LPSTR szStatus) {
-	if (tab->szStatus) GlobalFree((HGLOBAL)tab->szStatus);
+	if (tab->szStatus) GlobalFree((void far *)tab->szStatus);
 	tab->szStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(szStatus)+1);
 	lstrcpy(tab->szStatus, szStatus);
 	return TRUE;
 }
 
 BOOL SetTabURL(Tab far *tab, LPSTR szUrl) {
-	if (tab->szUrl) GlobalFree((HGLOBAL)tab->szUrl);
+	if (tab->szUrl) GlobalFree((void far *)tab->szUrl);
 	tab->szUrl = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(szUrl)+1);
 	lstrcpy(tab->szUrl, szUrl);
 	return TRUE;

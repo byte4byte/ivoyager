@@ -194,7 +194,7 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, *state);
         }
         
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM)NULL);
         
@@ -215,7 +215,7 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
                 //MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSSValue", MB_OK);
         }
         
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_CSS_CURR_VALUE, (LPARAM)NULL);
         
@@ -240,7 +240,7 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
                 *state = PARSE_CSS_STATE_FIND_SELECTOR;
         }
         
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_CSS_BLOCKTYPE, (LPARAM)NULL);
         
@@ -266,7 +266,7 @@ BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr,
                 bLastProperty = FALSE;
         }
         
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_CSS_BLOCK_PARAMS, (LPARAM)NULL);
 
@@ -289,7 +289,7 @@ BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr,
                 bLastProperty = TRUE;
         }
         
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_CSS_CURR_PROP, (LPARAM)NULL);
         
@@ -1028,11 +1028,11 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                 GetCustomTaskVar(task, PARSE_CSS_CURR_VALUE, (LPARAM far *)&lpCurrValueStart, NULL);
                 GetCustomTaskVar(task, PARSE_CSS_STATE_IN_BLOCK_PARAMS, (LPARAM far *)&blockParams, NULL);
                 GetCustomTaskVar(task, PARSE_CSS_BLOCKTYPE, (LPARAM far *)&blockType, NULL);
-                if (lpCurrSelectorStart) { GlobalFree((HGLOBAL)lpCurrSelectorStart); AddCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM)NULL); }
-                if (lpCurrPropStart) { GlobalFree((HGLOBAL)lpCurrPropStart); AddCustomTaskVar(task, PARSE_CSS_STATE_IN_PROP, (LPARAM)NULL); }
-                if (lpCurrValueStart) { GlobalFree((HGLOBAL)lpCurrValueStart); AddCustomTaskVar(task, PARSE_CSS_CURR_VALUE, (LPARAM)NULL); }
-                if (blockParams) { GlobalFree((HGLOBAL)blockParams); AddCustomTaskVar(task, PARSE_CSS_STATE_IN_BLOCK_PARAMS, (LPARAM)NULL); }
-                if (blockType) { GlobalFree((HGLOBAL)blockType); AddCustomTaskVar(task, PARSE_CSS_BLOCKTYPE, (LPARAM)NULL); }
+                if (lpCurrSelectorStart) { LocalFree((void far *)lpCurrSelectorStart); AddCustomTaskVar(task, PARSE_CSS_CURR_SELECTOR, (LPARAM)NULL); }
+                if (lpCurrPropStart) { LocalFree((void far *)lpCurrPropStart); AddCustomTaskVar(task, PARSE_CSS_STATE_IN_PROP, (LPARAM)NULL); }
+                if (lpCurrValueStart) { LocalFree((void far *)lpCurrValueStart); AddCustomTaskVar(task, PARSE_CSS_CURR_VALUE, (LPARAM)NULL); }
+                if (blockParams) { LocalFree((void far *)blockParams); AddCustomTaskVar(task, PARSE_CSS_STATE_IN_BLOCK_PARAMS, (LPARAM)NULL); }
+                if (blockType) { LocalFree((void far *)blockType); AddCustomTaskVar(task, PARSE_CSS_BLOCKTYPE, (LPARAM)NULL); }
 
                 if (findEndTask) { FreeTempTask(findEndTask); AddCustomTaskVar(task, PARSE_CSS_FIND_END_TASK, (LPARAM)NULL); }
                 
@@ -1059,7 +1059,7 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
         LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_TAG, ptr);
         
         GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-        if (prevtag) GlobalFree((HGLOBAL)prevtag);
+        if (prevtag) LocalFree((void far *)prevtag);
         
         if (window && ! IsWhitespace(fullptr)) {
                 DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
@@ -1077,6 +1077,10 @@ BOOL TagParsed(ContentWindow far *window, Task far *task, char far *ptr) {
 }
 
 BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) {
+        if (! ptr) {
+            AddCustomTaskVar(task, PARSE_DOM_CURR_ATTRIB, (LPARAM)NULL);
+            return FALSE;
+        }
         //return TRUE;
         {
         LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_ATTRIB, ptr);
@@ -1086,7 +1090,7 @@ BOOL AttribNameParsed(ContentWindow far *window, Task far *task, char far *ptr) 
                 DebugLog(window->tab, "%s", fullptr);
                 ResetDebugLogAttr(window->tab);
         }
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_DOM_CURR_ATTRIB, (LPARAM)NULL);
         return TRUE;
@@ -1098,7 +1102,7 @@ BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr)
         {
                 
         LPSTR fullptr = ConcatVar(task, PARSE_DOM_CURR_VALUE, ptr);
-        if (! fullptr) MessageBox(NULL, "fullptr NULL", "", MB_OK);
+        if (! fullptr) OutputDebugString("fullptr NULL");
         if (window && ! IsWhitespace(fullptr)) {
                 DebugLog(window->tab, "=\"");
                 DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,138));
@@ -1106,7 +1110,7 @@ BOOL AttribValueParsed(ContentWindow far *window, Task far *task, char far *ptr)
                 ResetDebugLogAttr(window->tab);
                 DebugLog(window->tab, "\"");
         }
-        GlobalFree((HGLOBAL)fullptr);
+        LocalFree((void far *)fullptr);
         
         AddCustomTaskVar(task, PARSE_DOM_CURR_VALUE, (LPARAM)NULL);
         return TRUE;
@@ -1171,7 +1175,7 @@ BOOL TagDone(ContentWindow far *window, Task far *task, LPARAM *state, LPARAM au
                         *state = PARSE_STATE_CSS_CODE;
                         AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
                 }
-                GlobalFree((HGLOBAL)tag);
+                LocalFree((void far *)tag);
                 AddCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM)NULL);
         }
         
@@ -1322,7 +1326,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far * far *bu
                                         if (currText) {
                                                 //MessageBox(window->hWnd, currText, "text", MB_OK);
                                                 TextParsed(window, task, currText);
-                                                GlobalFree((HGLOBAL)currText);
+                                                LocalFree((void far *)currText);
                                                 currText = NULL;
                                                 AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)currText);
                                         }                                       
@@ -1602,7 +1606,7 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far * far *bu
                 GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);     
                 if (currText) {
                         TextParsed(window, task, currText);
-                        GlobalFree((HGLOBAL)currText);
+                        LocalFree((void far *)currText);
                         AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)NULL);
                 }
                 switch (state) {
@@ -1642,17 +1646,17 @@ BOOL ParseDOMChunk(ContentWindow far *window, Task far *task, char far * far *bu
                 GetCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM far *)&currText, NULL);     
                 if (currText) {
                         TextParsed(window, task, currText);
-                        GlobalFree((HGLOBAL)currText);
+                        LocalFree((void far *)currText);
                         AddCustomTaskVar(task, PARSE_DOM_CURR_TEXT, (LPARAM)NULL);
                 }
                 GetCustomTaskVar(task, PARSE_DOM_CURR_PARSED_TAG, (LPARAM far *)&prevtag, NULL);
-                if (prevtag) GlobalFree((HGLOBAL)prevtag);
+                if (prevtag) LocalFree((void far *)prevtag);
                 GetCustomTaskVar(task, PARSE_DOM_CURR_TAG, (LPARAM far *)&lpCurrTagStart, NULL);
                 GetCustomTaskVar(task, PARSE_DOM_CURR_ATTRIB, (LPARAM far *)&lpCurrAttribStart, NULL);
                 GetCustomTaskVar(task, PARSE_DOM_CURR_VALUE, (LPARAM far *)&lpCurrValueStart, NULL);
-                if (lpCurrTagStart) GlobalFree((HGLOBAL)lpCurrTagStart);
-                if (lpCurrAttribStart) GlobalFree((HGLOBAL)lpCurrAttribStart);
-                if (lpCurrValueStart) GlobalFree((HGLOBAL)lpCurrValueStart);
+                if (lpCurrTagStart) LocalFree((void far *)lpCurrTagStart);
+                if (lpCurrAttribStart) LocalFree((void far *)lpCurrAttribStart);
+                if (lpCurrValueStart) LocalFree((void far *)lpCurrValueStart);
         }
         
         *buff = ptr;

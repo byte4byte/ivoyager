@@ -12,6 +12,15 @@
 #include <richedit.h>
 #endif
 
+int g_cnt = 0;
+int lcntr = 0;
+
+void StackTrace() {
+    static char buff[100];
+	wsprintf(buff, "totals: g: %d | l: %d", g_cnt, lcntr);
+	OutputDebugString(buff);
+}
+
 static Task far *g_tabTask = NULL, far *g_socketsTask = NULL;
 HWND browserWin;
 
@@ -43,7 +52,7 @@ static FILE *fpLog, *fpSource;
 static HWND hAddressBar, hTopBrowserWnd;
 static HINSTANCE g_hInstance;
 
-static LPSTR g_szDefURL = "file://d:/index.htm";
+static LPSTR g_szDefURL = "google.com";
 
 typedef struct DownloadFileTaskParams {
         LPSTR  url;
@@ -167,7 +176,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                 case RUN_TASK_STATE_READ_STREAM:
                 {
                         int addidx;
-            READ_CHUNK far *read_chunk;
+                        READ_CHUNK far *read_chunk;
                         if (open_url_data->stream->hasData(open_url_data->stream)) {
                                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere1\n");
                                 read_chunk = (READ_CHUNK far *)GlobalAlloc(GMEM_FIXED, sizeof(READ_CHUNK));
@@ -189,15 +198,15 @@ BOOL RunOpenUrlTask(Task far *task) {
                                         read_chunk->read_buff[0] = '\0';
                                         addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
                                         SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
-                                        //LocalFree((HGLOBAL)read_chunk);
+                                        //LocalFree((void far *)read_chunk);
                                         AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
                                         //MessageBox(browserWin, "EOF", "", MB_OK);
                                         DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\r\n--EOF--\r\n");
-                                        GlobalFree((HGLOBAL)read_chunk);
+                                        GlobalFree((void far *)read_chunk);
                                 }
                                 else {
                                         //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere5\n");
-                                          GlobalFree((HGLOBAL)read_chunk);
+                                          GlobalFree((void far *)read_chunk);
                                 }
                         
                         }
@@ -211,7 +220,10 @@ BOOL RunOpenUrlTask(Task far *task) {
                         //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere6\n");
 
                         if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
-                                if (state == RUN_TASK_STATE_PARSE_DOM) ret = TRUE;
+                                if (state == RUN_TASK_STATE_PARSE_DOM) {
+                                    SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\" %d %d", open_url_data->url_info->path, g_cnt, lcntr);
+                                    ret = TRUE;
+                                }
                                 break;
                         }
                         read_chunk = (READ_CHUNK far *)read_chunk_ptr;
@@ -221,7 +233,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                         
                         if (ParseDOMChunk(((DownloadFileTaskParams far *)task->params)->window, task, (char far * far *)&ptr, read_chunk->len, read_chunk->eof)) {
                                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere8\n");
-                                GlobalFree((HGLOBAL)read_chunk);
+                                GlobalFree((void far *)read_chunk);
                                 RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
                         }
                         
@@ -236,11 +248,11 @@ BOOL RunOpenUrlTask(Task far *task) {
                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere9\n");
                 if (open_url_data) {
                         if (open_url_data->stream) closeStream(open_url_data->stream);
-                        FreeUrlInfo(open_url_data->url_info);
-                        GlobalFree((HGLOBAL)open_url_data);
+                        //FreeUrlInfo(open_url_data->url_info);
+                        GlobalFree((void far *)open_url_data);
                 }
-                GlobalFree((HGLOBAL)((DownloadFileTaskParams far *)task->params)->url);
-                GlobalFree((HGLOBAL)task->params);
+                GlobalFree((void far *)((DownloadFileTaskParams far *)task->params)->url);
+                GlobalFree((void far *)task->params);
                 //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere10\n");
         }
         return ret;
@@ -328,7 +340,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 #endif
 
-        
+        OutputDebugString("MAIN");
 
         g_hInstance = hInstance;
 

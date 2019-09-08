@@ -34,11 +34,11 @@ typedef struct SocketStream {
 } SocketStream;
 
 typedef struct Stream_FILE {
-	Stream stream; // must come first
+        Stream stream; // must come first
 #ifdef WIN3_1
-	HFILE fp;
+        HFILE fp;
 #else
-	FILE *fp;
+        FILE *fp;
 #endif
 } Stream_FILE;
 
@@ -53,42 +53,43 @@ typedef struct Stream_HTTP {
         Stream stream; // must come first
         Task far *chunksTask;
         Stream_http far *http;
+		SocketStream *ss;
 } Stream_HTTP;
 
 int far readStream_FILE(Stream far *stream, char far *buff, int len) {
 #ifdef WIN3_1
-	int ret = _lread(((Stream_FILE far *)stream)->fp, buff, len);
+        int ret = _lread(((Stream_FILE far *)stream)->fp, buff, len);
 #else
-	int ret = fread(buff, 1, len, ((Stream_FILE far *)stream)->fp);
+        int ret = fread(buff, 1, len, ((Stream_FILE far *)stream)->fp);
 #endif
-	buff[ret] = '\0';
+        buff[ret] = '\0';
         WriteSource(stream->window->tab, buff, ret);
         return ret;
 }
 
 BOOL far EOFstream_FILE(Stream far *stream) {
 #ifdef WIN3_1
-	LONG end_pos, curr_pos;
-	curr_pos = _llseek(((Stream_FILE far *)stream)->fp, 0, 1);
-	end_pos = _llseek(((Stream_FILE far *)stream)->fp, 0, 2);
-	if (curr_pos == end_pos) return TRUE;
-	_llseek(((Stream_FILE far *)stream)->fp, curr_pos, 0);
-	return FALSE;
+        LONG end_pos, curr_pos;
+        curr_pos = _llseek(((Stream_FILE far *)stream)->fp, 0, 1);
+        end_pos = _llseek(((Stream_FILE far *)stream)->fp, 0, 2);
+        if (curr_pos == end_pos) return TRUE;
+        _llseek(((Stream_FILE far *)stream)->fp, curr_pos, 0);
+        return FALSE;
 #else  
-	return feof(((Stream_FILE far *)stream)->fp);
+        return feof(((Stream_FILE far *)stream)->fp);
 #endif
 }
 
 BOOL far hasDataStream_FILE(Stream far *stream) {
-	return !EOFstream_FILE(stream);
+        return TRUE; //!EOFstream_FILE(stream);
 }
 
 BOOL far closeStream_FILE(Stream far *stream) {
 #ifdef WIN3_1
-	return _lclose(((Stream_FILE far *)stream)->fp) == 0;
+        return _lclose(((Stream_FILE far *)stream)->fp) == 0;
 
 #else
-	return fclose(((Stream_FILE far *)stream)->fp);
+        return fclose(((Stream_FILE far *)stream)->fp);
 #endif
 }
 
@@ -107,7 +108,7 @@ int far readStream_HTTP(Stream far *stream, char far *buff, int len) {
         //DebugLog(NULL, "\nread3\n");
         lstrcpy(buff, (LPSTR)read_chunk_ptr);
         
-        GlobalFree((HGLOBAL)read_chunk_ptr);
+        GlobalFree((void far *)read_chunk_ptr);
         //DebugLog(NULL, "\nread4\n");
         RemoveCustomTaskListData(((Stream_HTTP far *)stream)->chunksTask, HTTP_CHUNK_LIST_VAR, 0);
         
@@ -127,6 +128,25 @@ BOOL far EOFstream_HTTP(Stream far *stream) {
 }
 
 BOOL far closeStream_HTTP(Stream far *stream) {
+#define HTTP_HEADERS_VAR                1
+    
+        Stream_HTTP far *http_stream = (Stream_HTTP far *)stream;
+		
+		if (http_stream->ss)
+		{
+			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)http_stream->ss);
+			RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+			if (http_stream->ss->s != INVALID_SOCKET) closesocket(http_stream->ss->s);
+			http_stream->ss->s = INVALID_SOCKET;
+			GlobalFree((LPVOID)http_stream->ss);
+		}
+		
+        if (http_stream) FreeTempTask(http_stream->chunksTask);
+        if (http_stream->http->parseHttpTask) {
+            FreeCustomTaskListData(http_stream->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
+            FreeTempTask(http_stream->http->parseHttpTask);
+        }
+        FreeUrlInfo(http_stream->http->url_info);
         return TRUE;
 }
 
@@ -135,30 +155,55 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         SocketStream far *ss;
         
         AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CONNECTING);
+		
+		if (ret->ss) 
+		{
+			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
+			RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+			if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
+			ret->ss->s = INVALID_SOCKET;
+			GlobalFree((LPVOID)ret->ss);
+			ret->ss = NULL;
+		}
+		
+		if (ret) {
+			FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+			FreeTempTask(ret->chunksTask);
+			ret->chunksTask = AllocTempTask();
+		}
         
-        closesocket(ret->http->s);
+        
         new_url_info = GetUrlInfo(szUrl, ret->http->url_info);
-        GlobalFree((HGLOBAL)ret->http);
+		
+		
+		FreeCustomTaskListData(ret->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
+        FreeUrlInfo(ret->http->url_info);
+		
+        GlobalFree((void far *)ret->http);
         
         ret->http = (Stream_http far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_http));
         _fmemset(ret->http, 0, sizeof(Stream_http));
         
         ret->http->s = (SOCKET)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (ret->http->s == INVALID_SOCKET) {
-                GlobalFree((HGLOBAL)ret);
-                return FALSE;
+			GlobalFree((void far *)ret);
+			return FALSE;
         }
         //ret->stream.read = readStream_HTTP;
         //ret->stream.eof = EOFstream_HTTP;
         //ret->stream.close = closeStream_HTTP;
         //ret->stream.window = window;
         //ret->stream.task = task;
+        
         ret->http->url_info = new_url_info;
                 
         ss = (SocketStream far *)GlobalAlloc(GMEM_FIXED, sizeof(SocketStream));
         ss->s = ret->http->s;
         ss->stream = (Stream far *)ret;
         ss->getHostBuf = (char far *)GlobalAlloc(GMEM_FIXED, MAXGETHOSTSTRUCT);
+		
+		ret->ss = ss;
+		
         AddCustomTaskListData(g_socketsTask, VAR_STREAMS, (LPARAM)ss);
         
         WSAAsyncSelect(ret->http->s, browserWin, WM_FSOCKET,
@@ -185,7 +230,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                         
                         ret->http->s = (SOCKET)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
                         if (ret->http->s == INVALID_SOCKET) {
-                                GlobalFree((HGLOBAL)ret);
+                                GlobalFree((void far *)ret);
                                 return NULL;
                         }
                         ret->stream.read = readStream_HTTP;
@@ -200,6 +245,9 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                         ss->s = ret->http->s;
                         ss->stream = (Stream far *)ret;
                         ss->getHostBuf = (char far *)GlobalAlloc(GMEM_FIXED, MAXGETHOSTSTRUCT);
+						
+						ret->ss = ss;
+						
                         AddCustomTaskListData(g_socketsTask, VAR_STREAMS, (LPARAM)ss);
                         
                         WSAAsyncSelect(ret->http->s, browserWin, WM_FSOCKET,
@@ -214,22 +262,21 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                 case FILE_PROTOCOL:
                 {
                         Stream_FILE far *ret = (Stream_FILE far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_FILE));
-			_fmemset(ret, 0, sizeof(Stream_FILE));
+                        _fmemset(ret, 0, sizeof(Stream_FILE));
 #ifdef WIN3_1
-			{
-			      OFSTRUCT of;
-			      ret->fp = OpenFile(url_info->path, &of, OF_READ);
-			      if (ret->fp == HFILE_ERROR) {
-			      	GlobalFree((HGLOBAL)ret);
-				return NULL;
-			      }
-		      	}
+                        {
+                              ret->fp = _lopen(url_info->path, OF_READ | OF_SHARE_DENY_NONE);
+                              if (ret->fp == HFILE_ERROR) {
+                                GlobalFree((void far *)ret);
+                                return NULL;
+                              }
+                        }
 #else
                         ret->fp = _ffopen(url_info->path, "rb");
                         if (! ret->fp) {
-				GlobalFree((HGLOBAL)ret);
+                                GlobalFree((void far *)ret);
                                 return NULL;
-			}
+                        }
 #endif
                         ret->stream.read = readStream_FILE;
                         ret->stream.eof = EOFstream_FILE;
@@ -245,5 +292,5 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 }
 
 BOOL closeStream(Stream far *stream) {
-        return TRUE;
+	return stream->close(stream);
 }

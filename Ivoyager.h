@@ -6,8 +6,6 @@
 // detect borland turbo C win3.1
 #if defined(__TURBOC__) && defined(__MSDOS__) && defined(_Windows)
 #define WIN3_1
-#elif defined(_WIN16) && ! defined(_WIN32)
-#define WIN3_1
 #endif
 
 #define WIN3_1
@@ -20,6 +18,8 @@
 #endif
 
 #include <stddef.h>
+
+void StackTrace();
 
 #define BUFFER_SIZE 1024
 

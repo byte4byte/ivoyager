@@ -6,29 +6,67 @@
 
 #ifdef WIN3_1
 
-static void far *GAlloc(DWORD len) {
-        HANDLE hMem;
+typedef unsigned long far * ULONG_PTR;
+
+#define GlobalPtrHandle( x )        ((HGLOBAL)GlobalHandle( x ))
+#define GlobalLockPtr( x )          ((BOOL)GlobalLock( GlobalPtrHandle( x ) ))
+#define GlobalUnlockPtr( x )        GlobalUnlock( GlobalPtrHandle( x ) )
+#define GlobalAllocPtr( p1, p2 )    GlobalLock( GlobalAlloc( p1, p2 ) )
+#define GlobalReAllocPtr( x, p1, p2 ) \
+    (GlobalUnlockPtr( x ), GlobalLock( GlobalReAlloc( GlobalPtrHandle( x ), p1, p2 ) ))
+#define GlobalFreePtr( x ) \
+    (GlobalUnlockPtr( x ), (BOOL)(ULONG_PTR)GlobalFree( GlobalPtrHandle( x ) ))
+
+extern int g_cnt, lcntr;
+
+static LPSTR GAlloc(DWORD len) {
+        void far * ret = (void far *)GlobalAllocPtr(GMEM_FIXED, len);
+		//void *ret = (void *)malloc(len);
+        g_cnt++;
+        if (! ret) {
+            char buff[20];
+            wsprintf(buff, "%d", g_cnt);
+            OutputDebugString("GALLOC FAILED");
+			StackTrace();
+        }
+        return ret;
+/*        HANDLE hMem;
         void far *ret;
         hMem = GlobalAlloc(GMEM_FIXED, len);
         if (! hMem) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
         ret = (void far *)GlobalLock(hMem);
         if (! ret) MessageBox(NULL, "GlobalAlloc FAILED", len <= 0 ? "ZERO" : "nbOT", MB_OK);
+        return ret;*/
+}
+
+
+
+static void far *LAlloc(int len) {
+        void *ret = (void *)malloc(len);
+           
+        //void *ret = (void *)LocalAlloc(LMEM_FIXED, len);
+        lcntr++;
+        if (! ret) {
+            char buff[20];
+            wsprintf(buff, "%d", lcntr);
+            OutputDebugString("localalloc failed");
+            StackTrace();
+        }
         return ret;
 }
 
-
-static void *LAlloc(int len) {
-        void *ret = (void *)LocalAlloc(LMEM_FIXED, len);
-        if (! ret) MessageBox(NULL, "LocalAlloc FAILED", "", MB_OK);
-        return ret;
+static void GFree(void far *ptr) {
+        g_cnt--;
+		//free(ptr);
+        GlobalFreePtr((UINT)ptr);
+        //) MessageBox(NULL, "global free failed", "", MB_OK);
+//        if (GlobalFree(GlobalHandle((UINT)ptr)) != NULL) MessageBox(NULL, "global free failed", "", MB_OK);
 }
 
-static void GFree(HGLOBAL ptr) {
-        if (GlobalFree(GlobalHandle((UINT)ptr)) != NULL) MessageBox(NULL, "global free failed", "", MB_OK);
-}
-
-static void LFree(HLOCAL ptr) {
-        LocalFree((HLOCAL)ptr);
+static void LFree(void far * ptr) {
+        lcntr--;
+        free(ptr);
+        //LocalFree(ptr);
 }
 
 #define GlobalAlloc(x, y) GAlloc(y)
@@ -51,14 +89,24 @@ static void LFree(HLOCAL ptr) {
 static LPSTR ConcatVar(Task far *task, DWORD id, LPSTR str) {
         LPSTR prev_str = NULL;
         LPSTR new_str;
-        if (! str) MessageBox(NULL, "NULL STRING", "", MB_OK);
+		//OutputDebugString("concat var");
+		//OutputDebugString(str);
+        if (! str) {
+            StackTrace();
+            OutputDebugString("NULL STRING");
+        }
         GetCustomTaskVar(task, id, (LPARAM far *)&prev_str, NULL);
         if (prev_str) {
                 LPSTR p, p2;
+				
                 int len = lstrlen(prev_str);
                 len += lstrlen(str);
-                new_str = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
-                if (! new_str) MessageBox(NULL, "alloc fail 1", "", MB_OK);
+				
+				//OutputDebugString("prev var");
+				//OutputDebugString(prev_str);
+				
+                new_str = (LPSTR)LocalAlloc(GMEM_FIXED, len+1);
+                if (! new_str) OutputDebugString("alloc fail 1");
                 lstrcpy(new_str, prev_str);
                 lstrcat(new_str, str);
                 /*p = new_str;
@@ -71,12 +119,12 @@ static LPSTR ConcatVar(Task far *task, DWORD id, LPSTR str) {
                 *p = '\0';*/
                 //lstrcat(new_str, str);
                 AddCustomTaskVar(task, id, (LPARAM)new_str);
-                GlobalFree((HGLOBAL)prev_str);
+                LocalFree((void far *)prev_str);
         }
         else {
                 int len = lstrlen(str);
-                new_str = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
-                if (! new_str) MessageBox(NULL, "alloc fail 2", "", MB_OK);
+                new_str = (LPSTR)LocalAlloc(GMEM_FIXED, len+1);
+                if (! new_str) OutputDebugString("alloc fail 2");
                 lstrcpy(new_str, str);
                 AddCustomTaskVar(task, id, (LPARAM)new_str);
         }

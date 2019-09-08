@@ -77,6 +77,8 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         int     len;
         LPSTR buffer;
 
+        //return;
+
         if (! tab) tab = TabFromId(g_currTabId);
 
         // retrieve the variable arguments
@@ -90,10 +92,11 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         len = vprintf_buffer_size(format, args);
 //#endif
 
-        buffer = (LPSTR)GlobalAlloc(GMEM_FIXED,  len * sizeof(char) );
+        buffer = (LPSTR)LocalAlloc(GMEM_FIXED,  len * sizeof(char) );
 
 {
         const void FAR *wargs = (const char FAR *)((&format)+1);
+       // lstrcpy(buffer, ".");
         wvsprintf( buffer, format, wargs ); // C4996
 }
 
@@ -112,7 +115,7 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         fclose(fpLog);
         fpLog = fopen("C:\\out.log", "a");*/
 
-        GlobalFree((HGLOBAL)buffer);
+        LocalFree((void *)buffer);
         va_end(args);
 }
 
@@ -125,7 +128,7 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
         va_list args;
         int     len;
         
-        if (lpszStatus) GlobalFree((HGLOBAL)lpszStatus);
+        if (lpszStatus) LocalFree((void *)lpszStatus);
 
         // retrieve the variable arguments
         va_start( args, format );
@@ -139,7 +142,7 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
         
 //#endif
 
-        lpszStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, len * sizeof(char) );
+        lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, len * sizeof(char) );
 {
     const void FAR *wargs = (const char FAR *)((&format)+1);
         wvsprintf( lpszStatus, format, wargs ); // C4996
@@ -178,11 +181,11 @@ BOOL SetActiveTab(Tab far *tab) {
                 int len = GetWindowTextLength(hAddressBar);
                 LPSTR buff;
                 len++;
-                buff = (LPSTR)GlobalAlloc(GMEM_FIXED, len+1);
+                buff = (LPSTR)LocalAlloc(GMEM_FIXED, len+1);
                 buff[len] = '\0';
                 GetWindowText(hAddressBar, buff, len);
                 SetTabURL(currTab, buff);
-                GlobalFree((HGLOBAL)buff);
+                LocalFree((void *)buff);
                 ShowWindow(currTab->hSource, SW_HIDE);
                 ShowWindow(currTab->hConsole, SW_HIDE);
         }
@@ -193,8 +196,8 @@ BOOL SetActiveTab(Tab far *tab) {
         SendMessage(shell, WM_SIZE, 0, 0L);
 
 
-        if (lpszStatus) GlobalFree((HGLOBAL)lpszStatus);
-        lpszStatus = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(tab->szStatus)+1);
+        if (lpszStatus) LocalFree((void far *)lpszStatus);
+        lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, lstrlen(tab->szStatus)+1);
         lstrcpy(lpszStatus, tab->szStatus);
         if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
 
@@ -234,12 +237,12 @@ LRESULT CALLBACK AddressBarProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                                 LPSTR url;
                                 Tab far *tab;
                                 int len = GetWindowTextLength(hWnd);
-                                url = (LPSTR)GlobalAlloc(GMEM_FIXED, len+2);
+                                url = (LPSTR)LocalAlloc(GMEM_FIXED, len+2);
                                 url[len] = '\0';
                                 GetWindowText(hWnd, url, len+1);
                                 tab = TabFromId(g_currTabId);
                                 OpenUrl(tab, &tab->TOP_WINDOW, tab->TOP_WINDOW.document, url);
-                                GlobalFree((HGLOBAL)url);
+                                LocalFree((void *)url);
                                 return FALSE;
                         }
                         break;
@@ -1329,7 +1332,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                  send(G_s, (char far *)G_out, len, SO_DONTROUTE);*/
                  return 0;
             case FD_READ: {
-                                char far *buff = (char far *)GlobalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
+                                char far *buff = (char far *)LocalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
                                 //for (;;) {
                                         int ret = recv(ss->s, buff, BUFFER_SIZE-2, 0);
                                         if (ret == SOCKET_ERROR) break;
@@ -1344,7 +1347,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                                 //DebugLog(ss->stream->window->tab, "%s", buff);
                                         }
                                 //}
-                                GlobalFree((HGLOBAL)buff);
+                                LocalFree((void far *)buff);
                  /*if (!G_con) return NULL;
                  MSG("Receiving data...")
                  ret = recv(G_s, (char far *)G_query, QUERYLEN, 0);
@@ -1377,6 +1380,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                         if (WSAGETASYNCERROR(lParam)) {
                                 if (ss) {
                                         // todo: set status on task to failed
+                                        GlobalFree((LPVOID)ss->getHostBuf);
                                         AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);
                                         SetStatusText(ss->stream->window->tab, "Unable to resolve");
                                 }
@@ -1384,7 +1388,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                 return 0;
                         }
                         //MessageBox(hWnd, "Resolved", "", MB_OK);
-                        if (ss) {
+                        if (ss &&  ss->getHostBuf) {
                                 int ret;
                                 struct hostent far *remote_host;
                                 struct sockaddr_in remote_addr;
@@ -1397,6 +1401,8 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                 remote_addr.sin_addr.S_un.S_un_b.s_b4 = remote_host->h_addr[3];
                                 remote_addr.sin_port                  = htons(((Stream_HTTP far *)ss->stream)->http->url_info->port);
                                 ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
+                                GlobalFree((LPVOID)ss->getHostBuf);
+								ss->getHostBuf = NULL;
                                 if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
                                         // todo: set status on task to failed
                                         AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);

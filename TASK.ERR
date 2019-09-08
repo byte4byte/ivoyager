@@ -1,18 +1,23 @@
-task.h(71): Warning! W138: No newline at end of file
 dom.h(110): Warning! W138: No newline at end of file
 tabs.h(37): Warning! W138: No newline at end of file
-task.h(71): Warning! W138: No newline at end of file
-utils.c(13): Warning! W136: Comparison equivalent to 'unsigned == 0'
-utils.c(15): Warning! W136: Comparison equivalent to 'unsigned == 0'
-utils.c(57): Warning! W202: Symbol 'p2' has been defined, but not referenced
-utils.c(57): Warning! W202: Symbol 'p' has been defined, but not referenced
-utils.c(325): Warning! W131: No prototype found for function 'abs'
-\task.c(640): Warning! W138: No newline at end of file
-utils.c(51): Warning! W202: Symbol 'ConcatVar' has been defined, but not referenced
-utils.c(96): Warning! W202: Symbol 'Trim' has been defined, but not referenced
-utils.c(86): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
-utils.c(130): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced
-utils.c(142): Warning! W202: Symbol 'NearPtrToFar' has been defined, but not referenced
-utils.c(155): Warning! W202: Symbol 'NearStrToFar' has been defined, but not referenced
-utils.c(216): Warning! W202: Symbol '_ffopen' has been defined, but not referenced
-utils.c(302): Warning! W202: Symbol 'vprintf_buffer_size' has been defined, but not referenced
+utils.c(45): Warning! W131: No prototype found for function 'malloc'
+utils.c(68): Warning! W131: No prototype found for function 'free'
+utils.c(100): Warning! W202: Symbol 'p2' has been defined, but not referenced
+utils.c(100): Warning! W202: Symbol 'p' has been defined, but not referenced
+utils.c(271): Warning! W102: Type mismatch (warning)
+utils.c(271): Note! I2003: source conversion type is 'unsigned int '
+utils.c(271): Note! I2004: target conversion type is 'void __far *'
+utils.c(271): Note! I2002: 'LFree' defined in: utils.c(66)
+utils.c(272): Warning! W102: Type mismatch (warning)
+utils.c(272): Note! I2003: source conversion type is 'unsigned int '
+utils.c(272): Note! I2004: target conversion type is 'void __far *'
+utils.c(272): Note! I2002: 'LFree' defined in: utils.c(66)
+utils.c(373): Warning! W131: No prototype found for function 'abs'
+utils.c(89): Warning! W202: Symbol 'ConcatVar' has been defined, but not referenced
+utils.c(134): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
+utils.c(144): Warning! W202: Symbol 'Trim' has been defined, but not referenced
+utils.c(178): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced
+utils.c(203): Warning! W202: Symbol 'NearStrToFar' has been defined, but not referenced
+utils.c(190): Warning! W202: Symbol 'NearPtrToFar' has been defined, but not referenced
+utils.c(264): Warning! W202: Symbol '_ffopen' has been defined, but not referenced
+utils.c(350): Warning! W202: Symbol 'vprintf_buffer_size' has been defined, but not referenced

@@ -22,7 +22,7 @@ BOOL FreeWebRequest(ContentWindow far *window, Task far *task) {
 }
 
 typedef struct HttpHeader {
-        LPSTR szName;
+		LPSTR szName;
         LPSTR szValue;
 } HttpHeader;
 
@@ -44,8 +44,17 @@ typedef struct HttpHeader {
 #define CHUNK_STATE_DATA                1
 
 HttpHeader far *ParseHttpHeader(LPSTR szHeader) {
-        LPSTR colon = szHeader;
+        LPSTR colon;
         HttpHeader far *header;
+        
+		
+        header = (HttpHeader far *)GlobalAlloc(GMEM_FIXED, sizeof(HttpHeader) + lstrlen(szHeader) + 1);
+		
+		header->szName = (LPSTR)header + sizeof(HttpHeader);
+		
+        lstrcpy(header->szName, Trim(szHeader, 1, 1));
+
+        colon = header->szName;
         while (*colon) {
                 if (*colon == ':') {
                         *colon = '\0';
@@ -54,25 +63,46 @@ HttpHeader far *ParseHttpHeader(LPSTR szHeader) {
                 }
                 colon++;
         }
-        header = (HttpHeader far *)GlobalAlloc(GMEM_FIXED, sizeof(HttpHeader));
-        header->szName = Trim(szHeader, 1, 1);
+        
         header->szValue = Trim(colon, 1, 1);
+        
         return header;
 }
 
 void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *headersParsed) {
-	LPARAM state;
-	int i = 0;
+        LPARAM state;
+        LPSTR toFree = NULL;
+        int i = 0;
+//AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
+//AddCustomTaskVar(stream->http->parseHttpTask, HTTP_STATE_VAR, (LPARAM)PARSE_HTTP_DATA_STATE);
+		//OutputDebugString("HTTP CHUNK");
+		//OutputDebugString(buff);
+//MessageBox(NULL, buff, "", MB_OK);
+        
         GetCustomTaskVar(stream->http->parseHttpTask, HTTP_STATE_VAR, &state, NULL);
         if (state == PARSE_HTTP_HEADER_STATE) {
                 LPSTR header_chunk = buff;
                 for (i = 0; i < len; i++) {
                         if (buff[i] == '\n') {
+							char b[20];
                                 LPSTR header;
                                 BOOL end_header = TRUE;
                                 
                                 buff[i] = '\0';
+								//MessageBox(NULL, "1", "", MB_OK);
+								//OutputDebugString("start line");
+								//wsprintf(b, "%d", lstrlen(header_chunk));
+								//OutputDebugString(b);
+								//OutputDebugString(header_chunk);
+								//OutputDebugString("end line");
+                                //MessageBox(NULL, header_chunk, "", MB_OK);
+								//MessageBox(NULL, "2", "", MB_OK);
                                 header_chunk = ConcatVar(stream->http->parseHttpTask, HTTP_HEADER_ACCUM_VAR, header_chunk);
+                                if (toFree) {
+                                      LocalFree(toFree);
+                                      toFree = NULL;
+                                }
+                                toFree = header_chunk;
                                 buff[i] = '\n';
                                 AddCustomTaskVar(stream->http->parseHttpTask, HTTP_HEADER_ACCUM_VAR, (LPARAM)NULL);
                                 header = header_chunk;
@@ -87,18 +117,25 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                         HttpHeader far *http_header = ParseHttpHeader(header_chunk);
                                         AddCustomTaskListData(stream->http->parseHttpTask, HTTP_HEADERS_VAR, (LPARAM)http_header);
                                         DebugLog(stream->stream.window->tab, "\"%s\": \"%s\"\n", http_header->szName, http_header->szValue);
+                                        if (toFree) {
+                                            LocalFree(toFree);
+                                            toFree = NULL;
+                                        }
                                         header_chunk = &buff[i+1];
                                 }
                                 else {
                                         *headersParsed = TRUE;
-					AddCustomTaskVar(stream->http->parseHttpTask, HTTP_STATE_VAR, (LPARAM)PARSE_HTTP_DATA_STATE);
+                                        AddCustomTaskVar(stream->http->parseHttpTask, HTTP_STATE_VAR, (LPARAM)PARSE_HTTP_DATA_STATE);
                                         state = PARSE_HTTP_DATA_STATE;
                                         len -= (&buff[i+1] - buff);
                                         buff = &buff[i+1];
+										
+										header_chunk = &buff[i+1];
                                         
+										AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
                                         
                                         {
-                                                LPARAM location_header;
+                                                LPARAM location_header = NULL;
                                                 GetCustomTaskListDataByStringField(((Stream_HTTP far *)stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", offsetof(HttpHeader, szName), TRUE, &location_header);
                                                 if (location_header) {
                                                         DebugLog(stream->stream.window->tab, "-------------------------------------\n");
@@ -127,14 +164,21 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                 
                 if (state == PARSE_HTTP_HEADER_STATE && lstrlen(header_chunk)) ConcatVar(stream->http->parseHttpTask, HTTP_HEADER_ACCUM_VAR, header_chunk);
         }
+
+        if (toFree) {
+           LocalFree(toFree);
+           toFree = NULL;
+        }
         
         if (state == PARSE_HTTP_DATA_STATE) {
                 LPARAM encoding;
+                              //  OutputDebugString("on data");
                 GetCustomTaskVar(stream->http->parseHttpTask, HTTP_ENCODING_VAR, &encoding, NULL);
                 if (encoding == HTTP_ENCODING_NORMAL) {
                         LPSTR ptr = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(buff)+1);
                         lstrcpy(ptr, buff);
                         AddCustomTaskListData(stream->chunksTask, HTTP_CHUNK_LIST_VAR, (LPARAM)ptr);
+                                                //MessageBox(NULL, ptr, "", MB_OK);
                 }
                 else if (encoding == HTTP_ENCODING_CHUNKED) {
                         LPARAM chunk_state;
@@ -145,7 +189,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                         while (*p) {
                                                 if (*p == '\n') {
                                                         LPARAM chunk_size;
-                            LPSTR fullsize;
+														LPSTR fullsize;
                                                         *p = '\0';
                                                         //MessageBox(browserWin, "here", "", MB_OK);
                                                         fullsize = Trim(ConcatVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_VAR, buff), 1, 1);
@@ -159,7 +203,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         chunk_size = _fstrtoul(fullsize, NULL, 16);
                                                         AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
                                                         
-                                                        GlobalFree((HGLOBAL)fullsize);
+                                                        GlobalFree((void far *)fullsize);
                                                         
                                                         
                                                         len -= ((p+1) - buff);
@@ -220,7 +264,7 @@ void HttpGet(Stream_HTTP far *stream) {
         //LPSTR buf = "GET / HTTP/1.1\r\nHost: ivoyager.online\r\n\r\n";
 
         send(stream->http->s, buff, lstrlen(buff), 0);
-        GlobalFree((HGLOBAL)buff);
+        GlobalFree((void far *)buff);
         stream->http->parseHttpTask = AllocTempTask();
         //Task far *task = GetAvailableWebRequestTask(window);
 }
