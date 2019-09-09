@@ -64,6 +64,8 @@
 
 #define VAR_CSSPRINTSTATE			600
 
+#define DebugLog(x, ...)
+
 BOOL CompileJSChunk(ContentWindow far *window, Task far *task, LPARAM *state, DomNode far *scriptEl, char far * far *buff, int len, BOOL eof) {
         *state = PARSE_STATE_TAG_START;
         AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
