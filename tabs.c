@@ -64,7 +64,7 @@ Tab far *TabFromIdx(int idx) {
 
 Tab far *TabFromId(long id) {
 	LPARAM ret;
-	GetCustomTaskListDataByPtrField(g_tabTask, VAR_TABS, (char far *)&id, offsetof(Tab, id), sizeof(long), &ret);
+	GetCustomTaskListDataByPtrField(g_tabTask, VAR_TABS, (char far *)&id, 0/*offsetof(Tab, id)*/, sizeof(long), &ret);
 	return (Tab far *)ret;
 }
 

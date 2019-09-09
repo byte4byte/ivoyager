@@ -62,13 +62,23 @@
 
 #define COMPILE_JS_VAR_STATE                                    300
 
+#define VAR_CSSPRINTSTATE			600
+
 BOOL CompileJSChunk(ContentWindow far *window, Task far *task, LPARAM *state, DomNode far *scriptEl, char far * far *buff, int len, BOOL eof) {
         *state = PARSE_STATE_TAG_START;
         AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *state);
         return TRUE;
 }
 
-BOOL CSSEnd(ContentWindow far *window, Task far *task, LPARAM far *state) {
+typedef struct {
+	BOOL inBlock;
+	BOOL inSelector;
+	BOOL bLastSelector;
+	BOOL bLastBlockParams;
+	BOOL bLastProperty;
+} CSSPrintState;
+
+BOOL CSSEnd(ContentWindow far *window, Task far *task, LPARAM far *state, CSSPrintState far *printstate) {
         Task far *findEndTask = AllocTempTask();
         AddCustomTaskVar(task, PARSE_CSS_RESTORE_STATE, *state);
         *state = PARSE_CSS_STATE_IN_MAYBEDONE;
@@ -141,13 +151,7 @@ BOOL StripCSSComment(char far *ptr, LPARAM *bInComment) {
         return TRUE;
 }
 
-BOOL inBlock = FALSE;
-BOOL inSelector = FALSE;
-BOOL bLastSelector = FALSE;
-BOOL bLastBlockParams = FALSE;
-BOOL bLastProperty = FALSE;
-
-BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
+BOOL CSSOpenBracket(ContentWindow far *window, Task far *task, CSSPrintState far *printstate) {
         //bLastBlockParams = bLastSelector = FALSE;
         DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));     
         DebugLog(window->tab, " {\r\n");
@@ -155,38 +159,38 @@ BOOL CSSOpenBracket(ContentWindow far *window, Task far *task) {
         return TRUE;
 }
 
-BOOL CSSCloseBracket(ContentWindow far *window, Task far *task) {
+BOOL CSSCloseBracket(ContentWindow far *window, Task far *task, CSSPrintState far *printstate) {
 
-        bLastBlockParams = bLastSelector = bLastProperty = FALSE;
+        printstate->bLastBlockParams = printstate->bLastSelector = printstate->bLastProperty = FALSE;
         
-        if (! inSelector && ! inBlock) return FALSE;
+        if (! printstate->inSelector && ! printstate->inBlock) return FALSE;
 
-        if (inSelector) inSelector = FALSE;
-        else if (inBlock) inBlock = FALSE;
+        if (printstate->inSelector) printstate->inSelector = FALSE;
+        else if (printstate->inBlock) printstate->inBlock = FALSE;
         DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,0));
-        if (inBlock) DebugLog(window->tab, "\t}\r\n");
+        if (printstate->inBlock) DebugLog(window->tab, "\t}\r\n");
         else DebugLog(window->tab, "}\r\n");
         ResetDebugLogAttr(window->tab);
         return TRUE;
 }
 
-BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
+BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state, CSSPrintState far *printstate) {
         LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_SELECTOR, ptr);
                 
         StripCSSComment(fullptr, bInComment);
         if (! IsWhitespace(fullptr)) {
                 fullptr = Trim(fullptr, TRUE, TRUE);
-                inSelector = TRUE;
-                if (bLastSelector == TRUE) DebugLog(window->tab, ", ");
-                else if (! bLastBlockParams) DebugLog(window->tab, "\r\n");
-                if (inBlock && ! bLastSelector) DebugLog(window->tab, "\t");
+                printstate->inSelector = TRUE;
+                if (printstate->bLastSelector == TRUE) DebugLog(window->tab, ", ");
+                else if (! printstate->bLastBlockParams) DebugLog(window->tab, "\r\n");
+                if (printstate->inBlock && ! printstate->bLastSelector) DebugLog(window->tab, "\t");
 
                 DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,255));
                 DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
                 ResetDebugLogAttr(window->tab);
 
-                bLastSelector = TRUE;
-                bLastProperty = FALSE;
+                printstate->bLastSelector = TRUE;
+                printstate->bLastProperty = FALSE;
                 //MessageBox(window->hWnd, fullptr, "CSS Selector", MB_OK);
         }
         else {
@@ -201,17 +205,17 @@ BOOL SelectorParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
         return TRUE;
 }
 
-BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment) {
+BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, CSSPrintState far *printstate) {
         LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_VALUE, ptr);
         
         StripCSSComment(fullptr, bInComment);
         if (! IsWhitespace(fullptr)) {
-                bLastBlockParams = bLastSelector = FALSE;
+                printstate->bLastBlockParams = printstate->bLastSelector = FALSE;
                 DebugLogAttr(window->tab, FALSE, FALSE, RGB(66, 66, 66));
                 DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
                 ResetDebugLogAttr(window->tab);
                 DebugLog(window->tab, ";\r\n");
-                bLastProperty = FALSE;
+                printstate->bLastProperty = FALSE;
                 //MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSSValue", MB_OK);
         }
         
@@ -222,18 +226,18 @@ BOOL CSSValueParsed(ContentWindow far *window, Task far *task, char far *ptr, LP
         return TRUE;
 }
 
-BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
+BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state, CSSPrintState far *printstate) {
         LPSTR fullptr = ConcatVar(task, PARSE_CSS_BLOCKTYPE, ptr);
         
         StripCSSComment(fullptr, bInComment);
         if (! IsWhitespace(fullptr)) {  
-                bLastBlockParams = bLastSelector = FALSE;
+                printstate->bLastBlockParams = printstate->bLastSelector = FALSE;
                 DebugLog(window->tab, "\r\n");
                 DebugLogAttr(window->tab, TRUE, FALSE, RGB(0,0,100));
                 DebugLog(window->tab, "@%s", Trim(fullptr, TRUE, TRUE));
                 ResetDebugLogAttr(window->tab);
                 DebugLog(window->tab, " ");
-                bLastProperty = FALSE;
+                printstate->bLastProperty = FALSE;
                 //MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Type", MB_OK);
         }
         else {
@@ -249,21 +253,21 @@ BOOL BlockTypeParsed(ContentWindow far *window, Task far *task, char far *ptr, L
 
 
 
-BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state) {
+BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, LPARAM *state, CSSPrintState far *printstate) {
         LPSTR fullptr = ConcatVar(task, PARSE_CSS_BLOCK_PARAMS, ptr);
         
         StripCSSComment(fullptr, bInComment);
         if (! IsWhitespace(fullptr)) {  
-                inBlock = TRUE;
-                if (bLastBlockParams == TRUE) DebugLog(window->tab, ",");
+                printstate->inBlock = TRUE;
+                if (printstate->bLastBlockParams == TRUE) DebugLog(window->tab, ",");
                 DebugLog(window->tab, " ");
                 DebugLogAttr(window->tab, FALSE, FALSE, RGB(0,0,145));
                 DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
                 ResetDebugLogAttr(window->tab);
                 DebugLog(window->tab, " ");
                 //MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Block Params", MB_OK);
-                bLastBlockParams = TRUE;
-                bLastProperty = FALSE;
+                printstate->bLastBlockParams = TRUE;
+                printstate->bLastProperty = FALSE;
         }
         
         LocalFree((void far *)fullptr);
@@ -273,20 +277,20 @@ BOOL BlockParamsParsed(ContentWindow far *window, Task far *task, char far *ptr,
         return TRUE;
 }
 
-BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment) {
+BOOL CSSPropertyParsed(ContentWindow far *window, Task far *task, char far *ptr, LPARAM *bInComment, CSSPrintState far *printstate) {
         LPSTR fullptr = ConcatVar(task, PARSE_CSS_CURR_PROP, ptr);
         
         StripCSSComment(fullptr, bInComment);
         if (! IsWhitespace(fullptr)) {
-                if (bLastProperty) DebugLog(window->tab, "\r\n");
-                if (inBlock) DebugLog(window->tab, "\t\t");
+                if (printstate->bLastProperty) DebugLog(window->tab, "\r\n");
+                if (printstate->inBlock) DebugLog(window->tab, "\t\t");
                 else DebugLog(window->tab, "\t");
                 //MessageBox(window->hWnd, Trim(fullptr, TRUE, TRUE), "CSS Property", MB_OK);
                 DebugLogAttr(window->tab, TRUE, FALSE, RGB(122,0,0));
                 DebugLog(window->tab, "%s", Trim(fullptr, TRUE, TRUE));
                 ResetDebugLogAttr(window->tab);
                 DebugLog(window->tab, ": ");
-                bLastProperty = TRUE;
+                printstate->bLastProperty = TRUE;
         }
         
         LocalFree((void far *)fullptr);
@@ -319,7 +323,16 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
         LPARAM last_slash = FALSE;
         
         LPARAM last_escape = FALSE;
-        
+		
+		CSSPrintState far *cssprintstate = NULL;
+		
+        GetCustomTaskVar(task, VAR_CSSPRINTSTATE, (LPARAM far *)&cssprintstate, NULL);
+		if (! cssprintstate) {
+			cssprintstate = (CSSPrintState far *)LocalAlloc(LMEM_FIXED, sizeof(CSSPrintState));
+			_fmemset(cssprintstate, 0, sizeof(CSSPrintState));
+			AddCustomTaskVar(task, VAR_CSSPRINTSTATE, (LPARAM)cssprintstate);
+		}
+		
         GetCustomTaskVar(task, PARSE_CSS_FOUND_SLASH, &last_slash, NULL);
                 
         GetCustomTaskVar(task, PARSE_CSS_VAR_STATE, &state, NULL);
@@ -361,7 +374,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         while (ptr < end) {
                                 
                                 if (*ptr == '<') {
-                                        CSSEnd(window, task, &state);
+                                        CSSEnd(window, task, &state, cssprintstate);
                                         bNoInc = TRUE;
                                         break;
                                 }
@@ -389,7 +402,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                 while (ptr < end) {
                                         if (*ptr == '<') {
                                                 last_slash = FALSE;
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -415,7 +428,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                         }
                                         else if (*ptr == '}') {
                                                 last_slash = FALSE;
-                                                CSSCloseBracket(window, task);
+                                                CSSCloseBracket(window, task, cssprintstate);
                                                 // todo close block
                                         }
                                         else if (! isspace(*ptr)) {
@@ -433,24 +446,24 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_IN_UNKNOWN_BLOCK: {
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
                                         else if (isspace(*ptr)) {
                                                 *ptr = '\0';
                                                 state = PARSE_CSS_STATE_IN_BLOCK_PARAMS;
-                                                BlockTypeParsed(window, task, blockType, &bInComment, &state);
+                                                BlockTypeParsed(window, task, blockType, &bInComment, &state, cssprintstate);
                                                 blockParams = ptr+1;                                    
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
                                                 break;
                                         }
                                         else if (*ptr == '{') {
                                                 *ptr = '\0';
-                                                BlockTypeParsed(window, task, blockType, &bInComment, &state);
+                                                BlockTypeParsed(window, task, blockType, &bInComment, &state, cssprintstate);
                                                 state = PARSE_CSS_STATE_FIND_SELECTOR;
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                CSSOpenBracket(window, task);
+                                                CSSOpenBracket(window, task, cssprintstate);
                                                 break;
                                         }
                                         ptr++;
@@ -460,7 +473,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_IN_BLOCK_PARAMS:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 *ptr = '\0';
                                                 ConcatVar(task, PARSE_CSS_BLOCK_PARAMS, blockParams);
                                                 *ptr = '<';
@@ -516,7 +529,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_IN_BLOCK_PARAMS;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        BlockParamsParsed(window, task, blockParams, &bInComment, &state);
+                                                        BlockParamsParsed(window, task, blockParams, &bInComment, &state, cssprintstate);
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
                                                         
                                                         blockParams = ptr+1;
@@ -527,10 +540,10 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         //state = PARSE_CSS_STATE_FIND_PROP;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrSelectorStart, "tag name", MB_OK);
-                                                        BlockParamsParsed(window, task, blockParams, &bInComment, &state);
+                                                        BlockParamsParsed(window, task, blockParams, &bInComment, &state, cssprintstate);
                                                         state = PARSE_CSS_STATE_FIND_SELECTOR;
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                        CSSOpenBracket(window, task);
+                                                        CSSOpenBracket(window, task, cssprintstate);
                                                         break;
                                                 }
                                         }
@@ -540,7 +553,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_IN_SELECTOR:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 *ptr = '\0';
                                                 ConcatVar(task, PARSE_CSS_CURR_SELECTOR, lpCurrSelectorStart);
                                                 *ptr = '<';
@@ -582,7 +595,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 }
                                         }
                                         else if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -602,7 +615,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_IN_SELECTOR;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state);
+                                                        SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state, cssprintstate);
                                                         lpCurrSelectorStart = ptr+1;
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 
@@ -613,14 +626,14 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrSelectorStart, "tag name", MB_OK);
                                                         state = PARSE_CSS_STATE_FIND_PROP;
-                                                        SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state);
+                                                        SelectorParsed(window, task, lpCurrSelectorStart, &bInComment, &state, cssprintstate);
                                                         
                                                         //DebugLog(window->tab, "!!");
                                                         
                                                         //lpCurrSelectorStart = NULL;
                                                         
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                        CSSOpenBracket(window, task);
+                                                        CSSOpenBracket(window, task, cssprintstate);
                                                         break;
                                                 }
                                         }
@@ -630,7 +643,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_FIND_PROP:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -641,7 +654,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
                                                 //SelectorParsed(window, task, lpCurrSelectorStart);
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                CSSCloseBracket(window, task);
+                                                CSSCloseBracket(window, task, cssprintstate);
                                                 break;
                                         }
                                         else if (! isspace(*ptr)) {
@@ -659,7 +672,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_IN_PROP:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 *ptr = '\0';
                                                 ConcatVar(task, PARSE_CSS_CURR_PROP, lpCurrPropStart);
@@ -672,7 +685,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
                                                 //SelectorParsed(window, task, lpCurrSelectorStart);
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                CSSCloseBracket(window, task);
+                                                CSSCloseBracket(window, task, cssprintstate);
                                                 break;
                                         }
                                         else {
@@ -680,7 +693,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_FIND_VALUE;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        CSSPropertyParsed(window, task, lpCurrPropStart, &bInComment);
+                                                        CSSPropertyParsed(window, task, lpCurrPropStart, &bInComment, cssprintstate);
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 
                                                         break;
@@ -689,7 +702,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_FIND_COLON;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        CSSPropertyParsed(window, task, lpCurrPropStart, &bInComment);
+                                                        CSSPropertyParsed(window, task, lpCurrPropStart, &bInComment, cssprintstate);
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
                                                         break;
                                                 }
@@ -700,7 +713,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_FIND_COLON:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -710,7 +723,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
                                                 //SelectorParsed(window, task, lpCurrSelectorStart);
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                CSSCloseBracket(window, task);
+                                                CSSCloseBracket(window, task, cssprintstate);
                                                 break;
                                         }
                                         else {
@@ -732,7 +745,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_FIND_VALUE:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -742,7 +755,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
                                                 //SelectorParsed(window, task, lpCurrSelectorStart);
                                                 AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                CSSCloseBracket(window, task);
+                                                CSSCloseBracket(window, task, cssprintstate);
                                                 break;
                                         }
                                         else {
@@ -765,7 +778,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                         case PARSE_CSS_STATE_IN_VALUE:
                                 while (ptr < end) {
                                         if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 *ptr = '\0';
                                                 ConcatVar(task, PARSE_CSS_CURR_VALUE, lpCurrValueStart);
@@ -807,7 +820,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                 }
                                         }
                                         else if (*ptr == '<') {
-                                                CSSEnd(window, task, &state);
+                                                CSSEnd(window, task, &state, cssprintstate);
                                                 bNoInc = TRUE;
                                                 break;
                                         }
@@ -826,7 +839,7 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_FIND_PROP;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        CSSValueParsed(window, task, lpCurrValueStart, &bInComment);
+                                                        CSSValueParsed(window, task, lpCurrValueStart, &bInComment, cssprintstate);
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
 
                                                         break;
@@ -835,9 +848,9 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
                                                         state = PARSE_CSS_STATE_FIND_SELECTOR;
                                                         *ptr = '\0';
                                                         //MessageBox(window->hWnd, lpCurrTagStart, "tag name", MB_OK);
-                                                        CSSValueParsed(window, task, lpCurrValueStart, &bInComment);
+                                                        CSSValueParsed(window, task, lpCurrValueStart, &bInComment, cssprintstate);
                                                         AddCustomTaskVar(task, PARSE_CSS_VAR_STATE, state);
-                                                        CSSCloseBracket(window, task);
+                                                        CSSCloseBracket(window, task, cssprintstate);
                                                         break;
                                                 }
                                         }
@@ -1042,6 +1055,8 @@ BOOL ParseCSSChunk(ContentWindow far *window, Task far *task, LPARAM *dom_state,
         if (bDone) {
                 *dom_state = PARSE_STATE_TAG_START;
                 AddCustomTaskVar(task, PARSE_DOM_VAR_STATE, *dom_state);
+				LocalFree(cssprintstate);
+				AddCustomTaskVar(task, VAR_CSSPRINTSTATE, (LPARAM)NULL);
         }
         
         *buff = ptr;

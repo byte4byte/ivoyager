@@ -69,7 +69,7 @@ HttpHeader far *ParseHttpHeader(LPSTR szHeader) {
         return header;
 }
 
-void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *headersParsed) {
+BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *headersParsed) {
         LPARAM state;
         LPSTR toFree = NULL;
         int i = 0;
@@ -84,7 +84,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                 LPSTR header_chunk = buff;
                 for (i = 0; i < len; i++) {
                         if (buff[i] == '\n') {
-							char b[20];
+							//char b[20];
                                 LPSTR header;
                                 BOOL end_header = TRUE;
                                 
@@ -113,7 +113,7 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                         }
                                         header++;
                                 }
-                                if (! end_header) {
+                                if (! end_header ) {
                                         HttpHeader far *http_header = ParseHttpHeader(header_chunk);
                                         AddCustomTaskListData(stream->http->parseHttpTask, HTTP_HEADERS_VAR, (LPARAM)http_header);
                                         DebugLog(stream->stream.window->tab, "\"%s\": \"%s\"\n", http_header->szName, http_header->szValue);
@@ -135,13 +135,13 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 										AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
                                         
                                         {
-                                                LPARAM location_header = NULL;
-                                                GetCustomTaskListDataByStringField(((Stream_HTTP far *)stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", offsetof(HttpHeader, szName), TRUE, &location_header);
+                                                LPARAM location_header = 0L;
+                                                GetCustomTaskListDataByStringField(((Stream_HTTP far *)stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", 0/*offsetof(HttpHeader, szName)*/, TRUE, &location_header);
                                                 if (location_header) {
                                                         DebugLog(stream->stream.window->tab, "-------------------------------------\n");
                                                         SetWindowText(stream->stream.window->tab->hSource, "");
                                                         redirectStream((Stream_HTTP far *)stream, ((HttpHeader far *)location_header)->szValue);
-                                                        return;
+                                                        return TRUE;
                                                 }
                                                 else {
                                                         AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
@@ -213,6 +213,9 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                                 AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_STATE_VAR, (LPARAM)CHUNK_STATE_DATA);
                                                                 //DebugLog(stream->stream.window->tab, "Chunk size: %ld\n", chunk_size);
                                                         }
+														else {
+															return FALSE;
+														}
                                                         break;
                                                 }
                                                 p++;
@@ -256,11 +259,13 @@ void HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                 }
                 //DebugLog(stream->stream.window->tab, "%s", buff);
         }
+		
+		return TRUE;
 }
 
 void HttpGet(Stream_HTTP far *stream) {
         LPSTR buff = (LPSTR)GlobalAlloc(GMEM_FIXED, 2048);
-        wsprintf(buff, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", stream->http->url_info->path, stream->http->url_info->domain);
+        wsprintf(buff, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", stream->stream.url_info->path, stream->stream.url_info->domain);
         //LPSTR buf = "GET / HTTP/1.1\r\nHost: ivoyager.online\r\n\r\n";
 
         send(stream->http->s, buff, lstrlen(buff), 0);

@@ -24,6 +24,7 @@ typedef struct Stream {
         stream_hasData hasData;
         ContentWindow far *window;
         Task far *task;
+		URL_INFO far *url_info;
 } Stream;
 
 typedef struct SocketStream {
@@ -44,7 +45,6 @@ typedef struct Stream_FILE {
 
 typedef struct Stream_http {
         SOCKET s;
-        URL_INFO far *url_info;
         Task far *parseHttpTask;
         int redirectCount;
 } Stream_http;
@@ -149,7 +149,7 @@ BOOL far closeStream_HTTP(Stream far *stream) {
             FreeCustomTaskListData(http_stream->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
             FreeTempTask(http_stream->http->parseHttpTask);
         }
-        FreeUrlInfo(http_stream->http->url_info);
+        FreeUrlInfo(http_stream->stream.url_info);
         return TRUE;
 }
 
@@ -157,40 +157,42 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         URL_INFO far *new_url_info;
         SocketStream far *ss;
         
+		AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_CONNECTING);
         AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CONNECTING);
-                
-                if (ret->ss) 
-                {
-                        int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
-                        RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-                        if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
-                        ret->ss->s = INVALID_SOCKET;
-                        GlobalFree((LPVOID)ret->ss);
-                        ret->ss = NULL;
-                }
-                
-                if (ret) {
-                        FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
-                        FreeTempTask(ret->chunksTask);
-                        ret->chunksTask = AllocTempTask();
-                }
+		{
+			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
+            RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+		}         
+		if (ret->ss) 
+		{
+				int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
+				RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+				if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
+				ret->ss->s = INVALID_SOCKET;
+				GlobalFree((LPVOID)ret->ss);
+				ret->ss = NULL;
+		}
+		
+		if (ret) {
+				FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+				FreeTempTask(ret->chunksTask);
+				ret->chunksTask = AllocTempTask();
+		}
         
-        
-        new_url_info = GetUrlInfo(szUrl, ret->http->url_info);
-                
-                
-                FreeCustomTaskListData(ret->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
-        FreeUrlInfo(ret->http->url_info);
+        new_url_info = GetUrlInfo(szUrl, ret->stream.url_info);
+                  
+        FreeCustomTaskListData(ret->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
+        FreeUrlInfo(ret->stream.url_info);
                 
         GlobalFree((void far *)ret->http);
-        
+
         ret->http = (Stream_http far *)GlobalAlloc(GMEM_FIXED, sizeof(Stream_http));
         _fmemset(ret->http, 0, sizeof(Stream_http));
         
         ret->http->s = (SOCKET)socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (ret->http->s == INVALID_SOCKET) {
-                        GlobalFree((void far *)ret);
-                        return FALSE;
+			GlobalFree((void far *)ret);
+			return FALSE;
         }
         //ret->stream.read = readStream_HTTP;
         //ret->stream.eof = EOFstream_HTTP;
@@ -198,7 +200,7 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         //ret->stream.window = window;
         //ret->stream.task = task;
         
-        ret->http->url_info = new_url_info;
+        ret->stream.url_info = new_url_info;
                 
         ss = (SocketStream far *)GlobalAlloc(GMEM_FIXED, sizeof(SocketStream));
         ss->s = ret->http->s;
@@ -242,7 +244,7 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                         ret->stream.hasData = hasDataStream_HTTP;
                         ret->stream.window = window;
                         ret->stream.task = task;
-                        ret->http->url_info = url_info;
+                        ret->stream.url_info = url_info;
                         
                         ss = (SocketStream far *)GlobalAlloc(GMEM_FIXED, sizeof(SocketStream));
                         ss->s = ret->http->s;
@@ -280,7 +282,11 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
                                 GlobalFree((void far *)ret);
                                 return NULL;
                         }
+						
 #endif
+
+						ret->stream.url_info = url_info;
+
                         ret->stream.read = readStream_FILE;
                         ret->stream.eof = EOFstream_FILE;
                         ret->stream.close = closeStream_FILE;

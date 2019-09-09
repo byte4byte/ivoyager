@@ -198,6 +198,7 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
                         url_info->path =  (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+1+1);
                         url_info->path[0] = '/';
                         lstrcpy(&url_info->path[1], path+1);
+						//MessageBox(NULL, url_info->path, "", MB_OK);
                 }
                 else {
                         url_info->path = (LPSTR)GlobalAlloc(GMEM_FIXED, 2);

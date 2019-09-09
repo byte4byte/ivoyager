@@ -2,17 +2,17 @@ dom.h(110): Warning! W138: No newline at end of file
 tabs.h(37): Warning! W138: No newline at end of file
 utils.c(45): Warning! W131: No prototype found for function 'malloc'
 utils.c(68): Warning! W131: No prototype found for function 'free'
-utils.c(157): Warning! W202: Symbol 'p2' has been defined, but not referenced
-utils.c(157): Warning! W202: Symbol 'p' has been defined, but not referenced
-utils.c(328): Warning! W102: Type mismatch (warning)
-utils.c(328): Note! I2003: source conversion type is 'unsigned int '
-utils.c(328): Note! I2004: target conversion type is 'void __far *'
-utils.c(328): Note! I2002: 'LFree' defined in: utils.c(66)
+utils.c(158): Warning! W202: Symbol 'p2' has been defined, but not referenced
+utils.c(158): Warning! W202: Symbol 'p' has been defined, but not referenced
 utils.c(329): Warning! W102: Type mismatch (warning)
 utils.c(329): Note! I2003: source conversion type is 'unsigned int '
 utils.c(329): Note! I2004: target conversion type is 'void __far *'
 utils.c(329): Note! I2002: 'LFree' defined in: utils.c(66)
-utils.c(430): Warning! W131: No prototype found for function 'abs'
+utils.c(330): Warning! W102: Type mismatch (warning)
+utils.c(330): Note! I2003: source conversion type is 'unsigned int '
+utils.c(330): Note! I2004: target conversion type is 'void __far *'
+utils.c(330): Note! I2002: 'LFree' defined in: utils.c(66)
+utils.c(431): Warning! W131: No prototype found for function 'abs'
 url.c(194): Warning! W131: No prototype found for function 'atoi'
 stream.c(208): Warning! W112: Pointer truncated
 stream.c(208): Note! I2003: source conversion type is 'struct SocketStream __far *'
@@ -20,18 +20,17 @@ stream.c(208): Note! I2004: target conversion type is 'struct SocketStream *'
 stream.c(252): Warning! W112: Pointer truncated
 stream.c(252): Note! I2003: source conversion type is 'struct SocketStream __far *'
 stream.c(252): Note! I2004: target conversion type is 'struct SocketStream *'
-http.c(87): Warning! W202: Symbol 'b' has been defined, but not referenced
 tests/taskdata.c(123): Warning! W138: No newline at end of file
-winshell.c(244): Warning! W112: Pointer truncated
-winshell.c(244): Note! I2003: source conversion type is 'struct DomNode __far *'
-winshell.c(244): Note! I2004: target conversion type is 'struct DomNode *'
-winshell.c(919): Warning! W112: Pointer truncated
-winshell.c(919): Note! I2003: source conversion type is 'struct DomNode __far *'
-winshell.c(919): Note! I2004: target conversion type is 'struct DomNode *'
+winshell.c(263): Warning! W112: Pointer truncated
+winshell.c(263): Note! I2003: source conversion type is 'struct DomNode __far *'
+winshell.c(263): Note! I2004: target conversion type is 'struct DomNode *'
+winshell.c(944): Warning! W112: Pointer truncated
+winshell.c(944): Note! I2003: source conversion type is 'struct DomNode __far *'
+winshell.c(944): Note! I2004: target conversion type is 'struct DomNode *'
 tests/path.c(17): Warning! W138: No newline at end of file
-utils.c(191): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
-utils.c(235): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced
-utils.c(247): Warning! W202: Symbol 'NearPtrToFar' has been defined, but not referenced
-utils.c(260): Warning! W202: Symbol 'NearStrToFar' has been defined, but not referenced
-utils.c(321): Warning! W202: Symbol '_ffopen' has been defined, but not referenced
+utils.c(192): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
+utils.c(236): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced
+utils.c(248): Warning! W202: Symbol 'NearPtrToFar' has been defined, but not referenced
+utils.c(261): Warning! W202: Symbol 'NearStrToFar' has been defined, but not referenced
+utils.c(322): Warning! W202: Symbol '_ffopen' has been defined, but not referenced
 main.c(52): Warning! W202: Symbol 'hTopBrowserWnd' has been defined, but not referenced

@@ -75,11 +75,14 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 
         va_list args;
         int     len;
-        LPSTR buffer;
+        LPSTR buffer = format;
 
         //return;
 
         if (! tab) tab = TabFromId(g_currTabId);
+		
+//#if 0
+//		return;
 
         // retrieve the variable arguments
         va_start( args, format );
@@ -95,10 +98,15 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         buffer = (LPSTR)LocalAlloc(GMEM_FIXED,  len * sizeof(char) );
 
 {
-        const void FAR *wargs = (const char FAR *)((&format)+1);
+        //const void FAR *wargs = (const void FAR *)((&format)+1);
        // lstrcpy(buffer, ".");
-        wvsprintf( buffer, format, wargs ); // C4996
+        wvsprintf( buffer, format, args ); // C4996
 }
+
+//buffer = format;
+
+
+//#endif
 
         ndx = GetWindowTextLength (tab->hConsole);
         SetFocus(tab->hConsole);
@@ -119,7 +127,7 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         va_end(args);
 }
 
-LPSTR lpszStatus =  NULL;
+//LPSTR lpszStatus =  NULL;
 HWND hStatusBar = NULL;
 
 void SetStatusText(Tab far *tab, LPSTR format, ...) {
@@ -127,8 +135,17 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
 
         va_list args;
         int     len;
+                
+                LPSTR lpszStatus;
+				
+		//		 SetTabStatus(tab, format);
+		//if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
+		//return;
+				
+				
+				//return;
         
-        if (lpszStatus) LocalFree((void *)lpszStatus);
+       // if (lpszStatus) LocalFree((void *)lpszStatus);
 
         // retrieve the variable arguments
         va_start( args, format );
@@ -144,13 +161,15 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
 
         lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, len * sizeof(char) );
 {
-    const void FAR *wargs = (const char FAR *)((&format)+1);
-        wvsprintf( lpszStatus, format, wargs ); // C4996
+    //const void FAR *wargs = (const void FAR *)((&format)+1);
+        wvsprintf( lpszStatus, format, args ); // C4996
 }
 
         SetTabStatus(tab, lpszStatus);
 
         va_end(args);   
+                
+                LocalFree(lpszStatus);
         
         if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
 }
@@ -196,9 +215,9 @@ BOOL SetActiveTab(Tab far *tab) {
         SendMessage(shell, WM_SIZE, 0, 0L);
 
 
-        if (lpszStatus) LocalFree((void far *)lpszStatus);
-        lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, lstrlen(tab->szStatus)+1);
-        lstrcpy(lpszStatus, tab->szStatus);
+       // if (lpszStatus) LocalFree((void far *)lpszStatus);
+        //lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, lstrlen(tab->szStatus)+1);
+        //lstrcpy(lpszStatus, tab->szStatus);
         if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
 
         SetWindowText(hAddressBar, tab->szUrl);
@@ -484,8 +503,14 @@ LRESULT CALLBACK BrowserShellToggleBar(HWND hWnd, UINT msg, WPARAM wParam, LPARA
                         HDC hDC;
                         static HFONT hFont = NULL;
                         HFONT hPrevFont;
+                                                
+                                                LPSTR lpszStatus;
+                                                Tab far *currTab = TabFromId(g_currTabId);
+                                                if (! currTab || ! currTab->szStatus)  return DefWindowProc(hWnd, msg, wParam, lParam);
+                                                
+                                                lpszStatus = currTab->szStatus;
                         
-                        if (! lpszStatus) return DefWindowProc(hWnd, msg, wParam, lParam);
+                        //if (! lpszStatus) return DefWindowProc(hWnd, msg, wParam, lParam);
                         
                         hDC = BeginPaint(hWnd, &ps);
 #ifndef WIN3_1                  
@@ -1310,16 +1335,16 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                         LPARAM ret;
                         SocketStream far *ss;
 #ifndef NOTHREADS
-	EnterCriticalSection(&sockcs);
+        EnterCriticalSection(&sockcs);
 #endif
                         GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, s), sizeof(SOCKET), &ret);
                         ss = (SocketStream far *)ret;
                         if (! ss) {
 #ifndef NOTHREADS
-	LeaveCriticalSection(&sockcs);
+        LeaveCriticalSection(&sockcs);
 #endif
-							return 0;
-						}
+                                                        return 0;
+                                                }
 
                         switch (WSAGETSELECTEVENT(lParam))
             {
@@ -1348,7 +1373,18 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                                 BOOL headersParsed = FALSE;
                                                 buff[ret] = '\0';
                                                 WriteSource(ss->stream->window->tab, buff, ret);
-                                                HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed);
+                                                if (! HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed)) {
+													LPARAM connect_state;
+														 GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
+														SetStatusText(ss->stream->window->tab, "Connection closed");
+														 if (connect_state != CONNECT_STATE_CONNECTING) {
+															 //AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
+														 //MessageBox(browserWin, "closed", "", MB_OK);
+																						
+															if (ss->s != INVALID_SOCKET) closesocket(ss->s);
+															ss->s = INVALID_SOCKET;
+														 }
+												}
                                                 if (headersParsed) {
                                                         
                                                 }
@@ -1371,31 +1407,33 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                  LPARAM connect_state;
                                  GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
                  SetStatusText(ss->stream->window->tab, "Connection closed");
-                                 if (connect_state != CONNECT_STATE_CONNECTING) AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
+                                 if (connect_state != CONNECT_STATE_CONNECTING)  {
+									 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
                                  //MessageBox(browserWin, "closed", "", MB_OK);
-								
-				if (ss->s != INVALID_SOCKET) closesocket(ss->s);
-				ss->s = INVALID_SOCKET;
-								 
+                                                                
+									if (ss->s != INVALID_SOCKET) closesocket(ss->s);
+									ss->s = INVALID_SOCKET;
+								 }
+                                                                 
                  //G_con = 0;
                  //closesocket(G_s);
                  break;
                         }
             }
-			
-			#ifndef NOTHREADS
-				LeaveCriticalSection(&sockcs);
-			#endif
+                        
+                        #ifndef NOTHREADS
+                                LeaveCriticalSection(&sockcs);
+                        #endif
 
-			
+                        
                         return 0;
                 }
                 case WM_HOSTRESOLVED: {
                         LPARAM ret;
                         SocketStream far *ss;
-						
+                                                
 #ifndef NOTHREADS
-	EnterCriticalSection(&sockcs);
+        EnterCriticalSection(&sockcs);
 #endif
 
                         GetCustomTaskListDataByPtrField(g_socketsTask, VAR_STREAMS, (char far *)&wParam, offsetof(SocketStream, hGetHostname), sizeof(HANDLE), &ret);
@@ -1408,9 +1446,9 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                         SetStatusText(ss->stream->window->tab, "Unable to resolve");
                                 }
                                 //MessageBox(hWnd, "Unable to resolve", "", MB_OK);
-			#ifndef NOTHREADS
-				LeaveCriticalSection(&sockcs);
-			#endif
+                        #ifndef NOTHREADS
+                                LeaveCriticalSection(&sockcs);
+                        #endif
                                 return 0;
                         }
                         //MessageBox(hWnd, "Resolved", "", MB_OK);
@@ -1425,24 +1463,24 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                                 remote_addr.sin_addr.S_un.S_un_b.s_b2 = remote_host->h_addr[1];
                                 remote_addr.sin_addr.S_un.S_un_b.s_b3 = remote_host->h_addr[2];
                                 remote_addr.sin_addr.S_un.S_un_b.s_b4 = remote_host->h_addr[3];
-                                remote_addr.sin_port                  = htons(((Stream_HTTP far *)ss->stream)->http->url_info->port);
+                                remote_addr.sin_port                  = htons(((Stream_HTTP far *)ss->stream)->stream.url_info->port);
                                 ret = connect(ss->s,(struct sockaddr far *) &(remote_addr), sizeof(struct sockaddr));
                                 GlobalFree((LPVOID)ss->getHostBuf);
-								ss->getHostBuf = NULL;
+                                                                ss->getHostBuf = NULL;
                                 if ( ret==SOCKET_ERROR && WSAGetLastError()!=WSAEWOULDBLOCK ) {
                                         // todo: set status on task to failed
                                         AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_ERROR);
                                         SetStatusText(ss->stream->window->tab, "Connect failed");
-			#ifndef NOTHREADS
-				LeaveCriticalSection(&sockcs);
-			#endif
+                        #ifndef NOTHREADS
+                                LeaveCriticalSection(&sockcs);
+                        #endif
                                         return 0;
                                 }
                                 SetStatusText(ss->stream->window->tab, "Connecting...");
                         }
-			#ifndef NOTHREADS
-				LeaveCriticalSection(&sockcs);
-			#endif
+                        #ifndef NOTHREADS
+                                LeaveCriticalSection(&sockcs);
+                        #endif
                         return 0;
                 }
                 case WM_SIZE: {

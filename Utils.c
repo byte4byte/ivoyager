@@ -136,6 +136,7 @@ static void LFree(void far * ptr) {
 #define _fstricmp _stricmp
 #define _fmemmove memmove
 #define _fmemset memset
+#define _fmemcpy memcpy
 #define _fstrchr strchr
 #define _ffopen fopen
 #define _fstrncpy strncpy
@@ -412,11 +413,11 @@ vprintf_buffer_size (const char far *format, va_list args)
   int total_width = lstrlen (format) + 1;
   va_list ap;
 
-#ifdef va_copy
-  va_copy (ap, args);
-#else
+//#ifdef va_copy
+//  va_copy (ap, args);
+//#else
   _fmemcpy ((PTR) &ap, (PTR) &args, sizeof (va_list));
-#endif
+//#endif
 
   while (*p != '\0')
     {
@@ -479,7 +480,7 @@ vprintf_buffer_size (const char far *format, va_list args)
         }
     }
 #ifdef va_copy
-  va_end (ap);
+ // va_end (ap);
 #endif
   return total_width;
 }

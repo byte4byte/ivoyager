@@ -6,9 +6,10 @@
 // detect borland turbo C win3.1
 #if defined(__TURBOC__) && defined(__MSDOS__) && defined(_Windows)
 #define WIN3_1
+#elif defined(__WATCOMC__)
+#define WIN3_1
 #endif
 
-#define WIN3_1
 
 #ifdef WIN3_1
 #include <string.h>

@@ -77,7 +77,6 @@ CRITICAL_SECTION sockcs;
 
 BOOL RunOpenUrlTask(Task far *task) {
         typedef struct {
-                URL_INFO far *url_info;
                 Stream far *stream;
         } OPEN_URL_DATA;
         
@@ -125,7 +124,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                                                 _fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
                                                 
                                                 open_url_data->stream = stream;
-                                                open_url_data->url_info = url_info;
+                                               // open_url_data->url_info = url_info;
                                                 
                                                 AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_CONNECTING);
                                                 AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
@@ -144,7 +143,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                                                 _fmemset(open_url_data, 0, sizeof(OPEN_URL_DATA));
                                                 
                                                 open_url_data->stream = stream;
-                                                open_url_data->url_info = url_info;
+                                                //open_url_data->url_info = url_info;
                                                 
                                                 AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_READ_STREAM);
                                                 AddCustomTaskVar(task, RUN_TASK_VAR_DATA, (LPARAM)open_url_data);
@@ -192,7 +191,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                                 //read_chunk->eof = open_url_data->stream->eof(open_url_data->stream);
                                 if (read_chunk->len > 0) {      
                                         //DebugLog(((DownloadFileTaskParams far *)task->params)->window->tab, "\nhere3\n");
-                                        SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->url_info->path);
+                                        SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Reading: \"%s\"", open_url_data->stream->url_info->path);
                                         //MessageBox(browserWin, open_url_data->url_info->path, "path", MB_OK);
                                         addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
                                 }
@@ -202,7 +201,7 @@ BOOL RunOpenUrlTask(Task far *task) {
                                         read_chunk->read_buff[0] = '\0';
 										read_chunk->len = 0;
                                         addidx = AddCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, (LPARAM)read_chunk);
-                                        SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->url_info->path);
+                                        SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\"", open_url_data->stream->url_info->path);
                                         //LocalFree((void far *)read_chunk);
                                         AddCustomTaskVar(task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_PARSE_DOM);
                                         //MessageBox(browserWin, "EOF", "", MB_OK);
@@ -226,7 +225,7 @@ BOOL RunOpenUrlTask(Task far *task) {
 
                         if (! GetCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0, &read_chunk_ptr)) {
                                 if (state == RUN_TASK_STATE_PARSE_DOM) {
-                                    SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\" %d %d", open_url_data->url_info->path, g_cnt, lcntr);
+                                    SetStatusText(((DownloadFileTaskParams far *)task->params)->window->tab, "Done: \"%s\" %d %d", open_url_data->stream->url_info->path, g_cnt, lcntr);
                                     ret = TRUE;
                                 }
                                 break;
@@ -428,7 +427,7 @@ int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         g_tabTask = AllocTempTask();
         g_socketsTask = AllocTempTask();
 #ifndef NOTHREADS
-	InitializeCriticalSection(&sockcs);
+		InitializeCriticalSection(&sockcs);
 #endif
         if (! WinsockStart()) {
                 MessageBox(NULL, "Unable to start winsock!", "", MB_OK);
