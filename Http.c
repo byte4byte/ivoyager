@@ -36,6 +36,7 @@ typedef struct HttpHeader {
 #define HTTP_CHUNK_STATE_VAR    4
 #define HTTP_CHUNK_SIZE_VAR             5
 #define HTTP_CHUNK_SIZE_INT_VAR 6
+#define HTTP_BYTES_REMAIN_VAR	7
 
 #define HTTP_ENCODING_NORMAL    0
 #define HTTP_ENCODING_CHUNKED   1
@@ -73,6 +74,9 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
         LPARAM state;
         LPSTR toFree = NULL;
         int i = 0;
+		LONG bytes_remain = -1;
+		
+		if (! GetCustomTaskVar(stream->http->parseHttpTask, HTTP_BYTES_REMAIN_VAR, &bytes_remain, NULL)) bytes_remain = -1;
 //AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
 //AddCustomTaskVar(stream->http->parseHttpTask, HTTP_STATE_VAR, (LPARAM)PARSE_HTTP_DATA_STATE);
 		//OutputDebugString("HTTP CHUNK");
@@ -147,6 +151,15 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
                                                 }
                                         }
+										
+										{
+											LPARAM content_len;
+                                            GetCustomTaskListDataByStringField(stream->http->parseHttpTask, HTTP_HEADERS_VAR, "Content-Length", offsetof(HttpHeader, szName), TRUE, &content_len);
+                                            if (content_len) {
+												bytes_remain = atol(((HttpHeader far *)content_len)->szValue);
+											}
+											AddCustomTaskVar(stream->http->parseHttpTask, HTTP_BYTES_REMAIN_VAR, (LPARAM)bytes_remain);
+										}
                                         
                                         {
                                                 LPARAM encoding_header;
@@ -175,9 +188,14 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                               //  OutputDebugString("on data");
                 GetCustomTaskVar(stream->http->parseHttpTask, HTTP_ENCODING_VAR, &encoding, NULL);
                 if (encoding == HTTP_ENCODING_NORMAL) {
-                        LPSTR ptr = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(buff)+1);
+						int slen = lstrlen(buff);
+                        LPSTR ptr = (LPSTR)GlobalAlloc(GMEM_FIXED, slen+1);
                         lstrcpy(ptr, buff);
                         AddCustomTaskListData(stream->chunksTask, HTTP_CHUNK_LIST_VAR, (LPARAM)ptr);
+						if (bytes_remain >= 0) {
+							bytes_remain -= slen;
+							if (bytes_remain <= 0) return FALSE;
+						}
                                                 //MessageBox(NULL, ptr, "", MB_OK);
                 }
                 else if (encoding == HTTP_ENCODING_CHUNKED) {
@@ -209,8 +227,8 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         len -= ((p+1) - buff);
                                                         buff = p+1;
                                                         if (chunk_size > 0) {
-                                                                chunk_state = CHUNK_STATE_DATA;
-                                                                AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_STATE_VAR, (LPARAM)CHUNK_STATE_DATA);
+															chunk_state = CHUNK_STATE_DATA;
+															AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_STATE_VAR, (LPARAM)CHUNK_STATE_DATA);
                                                                 //DebugLog(stream->stream.window->tab, "Chunk size: %ld\n", chunk_size);
                                                         }
 														else {
@@ -236,6 +254,13 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                 
                                                 chunk_size -= len;
                                                 AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
+												
+												
+												if (bytes_remain >= 0) {
+													bytes_remain -= len;
+													if (bytes_remain <= 0) return FALSE;
+												}
+												
                                                 break;
                                         }
                                         else {
@@ -252,6 +277,13 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                 AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_STATE_VAR, (LPARAM)chunk_state);
                                                 chunk_size = 0;
                                                 AddCustomTaskVar(stream->http->parseHttpTask, HTTP_CHUNK_SIZE_INT_VAR, (LPARAM)chunk_size);
+												
+												
+												if (bytes_remain >= 0) {
+													bytes_remain -= chunk_size;
+													if (bytes_remain <= 0) return FALSE;
+												}
+												
                                                 //if (len <= 0) break;
                                         }
                                 }
@@ -259,6 +291,8 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                 }
                 //DebugLog(stream->stream.window->tab, "%s", buff);
         }
+		
+		AddCustomTaskVar(stream->http->parseHttpTask, HTTP_BYTES_REMAIN_VAR, (LPARAM)bytes_remain);
 		
 		return TRUE;
 }

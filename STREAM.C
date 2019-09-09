@@ -159,10 +159,7 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
         
 		AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_STATE, RUN_TASK_STATE_CONNECTING);
         AddCustomTaskVar(((Stream far *)ret)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CONNECTING);
-		{
-			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
-            RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-		}         
+	        
 		if (ret->ss) 
 		{
 				int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);

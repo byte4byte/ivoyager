@@ -113,6 +113,23 @@ static LPSTR  NormalizePath(LPSTR  path) {
         return ret;
 }
 
+static void CloneUrlInfo(URL_INFO far* url_info, URL_INFO far* base_url, LPSTR path) {
+	if (base_url->domain) {
+		url_info->domain = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(base_url->domain)+1);
+		lstrcpy(url_info->domain, base_url->domain);
+	}
+	url_info->protocol = base_url->protocol;
+	url_info->port = base_url->port;
+	if (path) {
+		url_info->path = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+1);
+		lstrcpy(url_info->path, path);
+	}
+	//if (base_url->path) {
+///		url_info->path = (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(base_url->path)+1);
+	//	lstrcpy(url_info->path, base_url->path);
+	//}
+}
+
 static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
         char far *tmp_url;
         LPSTR username = NULL;
@@ -137,8 +154,9 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
         else if (IsAbsolutePath(url)) {
                 if (base_url) {
                         //copy base to url_info and use url as path
-                        _fmemcpy(url_info, base_url, sizeof(URL_INFO));
-                        url_info->path = url;
+                        //_fmemcpy(url_info, base_url, sizeof(URL_INFO));
+                        //url_info->path = url;
+						CloneUrlInfo(url_info, base_url, url);
                         return url_info;
                 }
                 else {
@@ -147,6 +165,8 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
         }
         else if (base_url) {
                 // copy base to url_info and append url to base path
+				CloneUrlInfo(url_info, base_url, url);
+				return url_info;
         }
         
         if (url_info->protocol == FILE_PROTOCOL) {
@@ -195,7 +215,7 @@ static URL_INFO far *  GetUrlInfo(LPSTR  url, URL_INFO far* base_url) {
                 }
                 
                 if (path) {
-                        url_info->path =  (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path)+1+1);
+                        url_info->path =  (LPSTR)GlobalAlloc(GMEM_FIXED, lstrlen(path+1)+1+1);
                         url_info->path[0] = '/';
                         lstrcpy(&url_info->path[1], path+1);
 						//MessageBox(NULL, url_info->path, "", MB_OK);

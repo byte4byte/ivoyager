@@ -1378,7 +1378,7 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 														 GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
 														SetStatusText(ss->stream->window->tab, "Connection closed");
 														 if (connect_state != CONNECT_STATE_CONNECTING) {
-															 //AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
+															 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
 														 //MessageBox(browserWin, "closed", "", MB_OK);
 																						
 															if (ss->s != INVALID_SOCKET) closesocket(ss->s);
