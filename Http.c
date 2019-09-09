@@ -140,7 +140,7 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                         
                                         {
                                                 LPARAM location_header = 0L;
-                                                GetCustomTaskListDataByStringField(((Stream_HTTP far *)stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", 0/*offsetof(HttpHeader, szName)*/, TRUE, &location_header);
+                                                GetCustomTaskListDataByStringField(((Stream_HTTP far *)stream)->http->parseHttpTask, HTTP_HEADERS_VAR, "Location", offsetof(HttpHeader, szName), TRUE, &location_header);
                                                 if (location_header) {
                                                         DebugLog(stream->stream.window->tab, "-------------------------------------\n");
                                                         SetWindowText(stream->stream.window->tab->hSource, "");

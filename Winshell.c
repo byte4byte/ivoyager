@@ -98,9 +98,9 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         buffer = (LPSTR)LocalAlloc(GMEM_FIXED,  len * sizeof(char) );
 
 {
-        //const void FAR *wargs = (const void FAR *)((&format)+1);
+        const char FAR *wargs = (const void FAR *)((&format)+1);
        // lstrcpy(buffer, ".");
-        wvsprintf( buffer, format, args ); // C4996
+        wvsprintf( buffer, format, wargs ); // C4996
 }
 
 //buffer = format;
@@ -161,8 +161,8 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
 
         lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, len * sizeof(char) );
 {
-    //const void FAR *wargs = (const void FAR *)((&format)+1);
-        wvsprintf( lpszStatus, format, args ); // C4996
+   const char FAR *wargs = (const void FAR *)((&format)+1);
+        wvsprintf( lpszStatus, format, wargs ); // C4996
 }
 
         SetTabStatus(tab, lpszStatus);

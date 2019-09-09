@@ -13,13 +13,14 @@ utils.c(330): Note! I2003: source conversion type is 'unsigned int '
 utils.c(330): Note! I2004: target conversion type is 'void __far *'
 utils.c(330): Note! I2002: 'LFree' defined in: utils.c(66)
 utils.c(431): Warning! W131: No prototype found for function 'abs'
-url.c(194): Warning! W131: No prototype found for function 'atoi'
-stream.c(210): Warning! W112: Pointer truncated
-stream.c(210): Note! I2003: source conversion type is 'struct SocketStream __far *'
-stream.c(210): Note! I2004: target conversion type is 'struct SocketStream *'
-stream.c(254): Warning! W112: Pointer truncated
-stream.c(254): Note! I2003: source conversion type is 'struct SocketStream __far *'
-stream.c(254): Note! I2004: target conversion type is 'struct SocketStream *'
+url.c(214): Warning! W131: No prototype found for function 'atoi'
+stream.c(207): Warning! W112: Pointer truncated
+stream.c(207): Note! I2003: source conversion type is 'struct SocketStream __far *'
+stream.c(207): Note! I2004: target conversion type is 'struct SocketStream *'
+stream.c(251): Warning! W112: Pointer truncated
+stream.c(251): Note! I2003: source conversion type is 'struct SocketStream __far *'
+stream.c(251): Note! I2004: target conversion type is 'struct SocketStream *'
+http.c(159): Warning! W131: No prototype found for function 'atol'
 tests/taskdata.c(123): Warning! W138: No newline at end of file
 winshell.c(263): Warning! W112: Pointer truncated
 winshell.c(263): Note! I2003: source conversion type is 'struct DomNode __far *'
