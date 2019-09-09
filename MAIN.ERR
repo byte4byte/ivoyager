@@ -22,12 +22,12 @@ stream.c(251): Note! I2003: source conversion type is 'struct SocketStream __far
 stream.c(251): Note! I2004: target conversion type is 'struct SocketStream *'
 http.c(159): Warning! W131: No prototype found for function 'atol'
 tests/taskdata.c(123): Warning! W138: No newline at end of file
-winshell.c(263): Warning! W112: Pointer truncated
-winshell.c(263): Note! I2003: source conversion type is 'struct DomNode __far *'
-winshell.c(263): Note! I2004: target conversion type is 'struct DomNode *'
-winshell.c(944): Warning! W112: Pointer truncated
-winshell.c(944): Note! I2003: source conversion type is 'struct DomNode __far *'
-winshell.c(944): Note! I2004: target conversion type is 'struct DomNode *'
+winshell.c(250): Warning! W112: Pointer truncated
+winshell.c(250): Note! I2003: source conversion type is 'struct DomNode __far *'
+winshell.c(250): Note! I2004: target conversion type is 'struct DomNode *'
+winshell.c(931): Warning! W112: Pointer truncated
+winshell.c(931): Note! I2003: source conversion type is 'struct DomNode __far *'
+winshell.c(931): Note! I2004: target conversion type is 'struct DomNode *'
 tests/path.c(17): Warning! W138: No newline at end of file
 utils.c(192): Warning! W202: Symbol 'IsWhitespace' has been defined, but not referenced
 utils.c(236): Warning! W202: Symbol 'FarPtrToNear' has been defined, but not referenced

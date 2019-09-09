@@ -77,14 +77,8 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
         int     len;
         LPSTR buffer = format;
 
-        //return;
-
         if (! tab) tab = TabFromId(g_currTabId);
 		
-//#if 0
-//		return;
-
-        // retrieve the variable arguments
         va_start( args, format );
 
 //#ifndef WIN3_1
@@ -97,16 +91,14 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 
         buffer = (LPSTR)LocalAlloc(GMEM_FIXED,  len * sizeof(char) );
 
-{
-        const char FAR *wargs = (const void FAR *)((&format)+1);
-       // lstrcpy(buffer, ".");
-        wvsprintf( buffer, format, wargs ); // C4996
-}
-
-//buffer = format;
-
-
-//#endif
+		{
+			const char FAR *wargs = (const void FAR *)((&format)+1);
+#ifdef WIN3_1
+			wvsprintf( buffer, format, wargs ); // C4996
+#else
+			wvsprintf( buffer, format, (va_list)wargs ); // C4996
+#endif
+		}
 
         ndx = GetWindowTextLength (tab->hConsole);
         SetFocus(tab->hConsole);
@@ -131,22 +123,12 @@ void DebugLog(Tab far *tab, LPSTR format, ...) {
 HWND hStatusBar = NULL;
 
 void SetStatusText(Tab far *tab, LPSTR format, ...) {
-        //int ndx;
 
         va_list args;
         int     len;
                 
-                LPSTR lpszStatus;
+        LPSTR lpszStatus;
 				
-		//		 SetTabStatus(tab, format);
-		//if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
-		//return;
-				
-				
-				//return;
-        
-       // if (lpszStatus) LocalFree((void *)lpszStatus);
-
         // retrieve the variable arguments
         va_start( args, format );
 
@@ -161,15 +143,20 @@ void SetStatusText(Tab far *tab, LPSTR format, ...) {
 
         lpszStatus = (LPSTR)LocalAlloc(GMEM_FIXED, len * sizeof(char) );
 {
-   const char FAR *wargs = (const void FAR *)((&format)+1);
-        wvsprintf( lpszStatus, format, wargs ); // C4996
+		const char FAR *wargs = (const void FAR *)((&format)+1);
+#ifdef WIN3_1
+		wvsprintf( lpszStatus, format, wargs ); // C4996
+#else
+        wvsprintf( lpszStatus, format, (va_list)wargs ); // C4996
+#endif
 }
 
         SetTabStatus(tab, lpszStatus);
 
         va_end(args);   
                 
-                LocalFree(lpszStatus);
+        
+		LocalFree(lpszStatus);
         
         if (hStatusBar) InvalidateRect(hStatusBar, NULL, TRUE);
 }
@@ -1135,6 +1122,7 @@ LRESULT  CALLBACK BrowserInnerShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
                                         if (tab) {
                                                 g_currTabId = -1;
                                                 DestroyWindow(tab->hSource);
+												DestroyWindow(tab->hConsole);
                                                 FreeTab(tab);
                                         }
                                         if (g_selectedTab > currtab) {
