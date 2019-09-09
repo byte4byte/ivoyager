@@ -217,8 +217,8 @@ BOOL RunOpenUrlTask(Task far *task) {
                         ptr = read_chunk->read_buff;
                         
                         if (ParseDOMChunk(((DownloadFileTaskParams far *)task->params)->window, task, (char far * far *)&ptr, read_chunk->len, read_chunk->eof)) {
-                                GlobalFree((void far *)read_chunk);
-                                RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
+                            GlobalFree((void far *)read_chunk);
+                            RemoveCustomTaskListData(task, RUN_TASK_VAR_CHUNKS, 0);
                         }
                         
                         break;

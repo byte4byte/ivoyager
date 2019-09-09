@@ -136,7 +136,7 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
 										
 										header_chunk = &buff[i+1];
                                         
-										AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
+										//AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
                                         
                                         {
                                                 LPARAM location_header = 0L;
@@ -145,7 +145,13 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         DebugLog(stream->stream.window->tab, "-------------------------------------\n");
                                                         SetWindowText(stream->stream.window->tab->hSource, "");
                                                         redirectStream((Stream_HTTP far *)stream, ((HttpHeader far *)location_header)->szValue);
-                                                        return TRUE;
+                                                       
+														if (toFree) {
+															LocalFree(toFree);
+															toFree = NULL;
+														}
+
+													   return TRUE;
                                                 }
                                                 else {
                                                         AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
@@ -168,6 +174,8 @@ BOOL HttpGetChunk(Stream_HTTP far *stream, char far *buff, int len, BOOL *header
                                                         AddCustomTaskVar(stream->http->parseHttpTask, HTTP_ENCODING_VAR, (LPARAM)HTTP_ENCODING_CHUNKED);
                                                 }
                                         }
+										
+										//AddCustomTaskVar(((Stream far *)stream)->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_READY);
                                         
                                         DebugLog(stream->stream.window->tab, "\n\n=============== /HEADERS ==================\n\n");
                                         break;

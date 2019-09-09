@@ -128,33 +128,33 @@ BOOL far EOFstream_HTTP(Stream far *stream) {
 }
 
 BOOL far closeStream_HTTP(Stream far *stream) {
-#define HTTP_HEADERS_VAR                1
+	#define HTTP_HEADERS_VAR                1
     
-        Stream_HTTP far *http_stream = (Stream_HTTP far *)stream;
+	Stream_HTTP far *http_stream = (Stream_HTTP far *)stream;
                 
-                if (http_stream->ss)
-                {
-                        int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)http_stream->ss);
-                        RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-                        if (http_stream->ss->s != INVALID_SOCKET) closesocket(http_stream->ss->s);
-                        http_stream->ss->s = INVALID_SOCKET;
-                        GlobalFree((LPVOID)http_stream->ss);
-                }
+	if (http_stream->ss)
+	{
+		int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)http_stream->ss);
+		RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+		if (http_stream->ss->s != INVALID_SOCKET) closesocket(http_stream->ss->s);
+		http_stream->ss->s = INVALID_SOCKET;
+		GlobalFree((LPVOID)http_stream->ss);
+	}
                 
-        if (http_stream->chunksTask) {
-                        FreeCustomTaskListData(http_stream->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
-                        FreeTempTask(http_stream->chunksTask);
-                }
-        if (http_stream->http->parseHttpTask) {
-            FreeCustomTaskListData(http_stream->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
-            FreeTempTask(http_stream->http->parseHttpTask);
-        }
-        FreeUrlInfo(http_stream->stream.url_info);	
-		
-		GlobalFree(http_stream->http);
-		GlobalFree(http_stream);
-		
-        return TRUE;
+	if (http_stream->chunksTask) {
+		FreeCustomTaskListData(http_stream->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+		FreeTempTask(http_stream->chunksTask);
+	}
+	if (http_stream->http->parseHttpTask) {
+		FreeCustomTaskListData(http_stream->http->parseHttpTask, HTTP_HEADERS_VAR, LFREE);
+		FreeTempTask(http_stream->http->parseHttpTask);
+	}
+	FreeUrlInfo(http_stream->stream.url_info);	
+	
+	GlobalFree(http_stream->http);
+	GlobalFree(http_stream);
+	
+	return TRUE;
 }
 
 BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
@@ -166,18 +166,18 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
 	        
 		if (ret->ss) 
 		{
-				int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
-				RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
-				if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
-				ret->ss->s = INVALID_SOCKET;
-				GlobalFree((LPVOID)ret->ss);
-				ret->ss = NULL;
+			int idx = GetCustomTaskListIdxByData(g_socketsTask, VAR_STREAMS, (LPARAM)ret->ss);
+			RemoveCustomTaskListData(g_socketsTask, VAR_STREAMS, idx);
+			if (ret->ss->s != INVALID_SOCKET) closesocket(ret->ss->s);
+			ret->ss->s = INVALID_SOCKET;
+			GlobalFree((LPVOID)ret->ss);
+			ret->ss = NULL;
 		}
 		
 		if (ret) {
-				FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
-				FreeTempTask(ret->chunksTask);
-				ret->chunksTask = AllocTempTask();
+			FreeCustomTaskListData(ret->chunksTask, HTTP_CHUNK_LIST_VAR, GFREE);
+			FreeTempTask(ret->chunksTask);
+			ret->chunksTask = AllocTempTask();
 		}
         
         new_url_info = GetUrlInfo(szUrl, ret->stream.url_info);
@@ -199,12 +199,6 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
 			GlobalFree((void far *)ret);
 			return FALSE;
         }
-		
-        //ret->stream.read = readStream_HTTP;
-        //ret->stream.eof = EOFstream_HTTP;
-        //ret->stream.close = closeStream_HTTP;
-        //ret->stream.window = window;
-        //ret->stream.task = task;
         
         ret->stream.url_info = new_url_info;
                 
@@ -307,5 +301,5 @@ Stream far *openStream(Task far *task, ContentWindow far *window, URL_INFO far *
 }
 
 BOOL closeStream(Stream far *stream) {
-        return stream->close(stream);
+    return stream->close(stream);
 }
