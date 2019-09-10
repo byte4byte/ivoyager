@@ -268,8 +268,8 @@ void OpenUrl(Tab far *tab, ContentWindow far *window, DomNode *element, LPSTR  u
         DownloadFileTaskParams far *params;
         Task far *loadUrlTask;
         
-        fpLog = fopen("C:\\out.log", "w");
-        fpSource = fopen("C:\\source.log", "w");
+        //fpLog = fopen("C:\\out.log", "w");
+        //fpSource = fopen("C:\\source.log", "w");
         
         //MessageBox(browserWin, url, "", MB_OK);
         
