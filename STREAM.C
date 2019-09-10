@@ -180,7 +180,8 @@ BOOL redirectStream(Stream_HTTP far *ret, LPSTR szUrl) {
 			ret->chunksTask = AllocTempTask();
 		}
         
-        new_url_info = GetUrlInfo(szUrl, ret->stream.url_info);
+		
+		new_url_info = GetUrlInfo(szUrl, ret->stream.url_info);
 		
 		FreeCustomTaskListData(ret->stream.task, RUN_TASK_VAR_CHUNKS, GFREE);
 		               

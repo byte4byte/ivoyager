@@ -1349,24 +1349,24 @@ LRESULT CALLBACK BrowserShellProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             case FD_READ: {
 					char far *buff = (char far *)LocalAlloc(GMEM_FIXED, BUFFER_SIZE); // should be <= READ_CHUNK size
 					int ret = recv(ss->s, buff, BUFFER_SIZE-2, 0);
-					if (ret == SOCKET_ERROR) break;
+					if (ret == SOCKET_ERROR) {
+						LocalFree((void far *)buff);
+						break;
+					}
 					if (ret > 0) {
 							BOOL headersParsed = FALSE;
 							buff[ret] = '\0';
 							WriteSource(ss->stream->window->tab, buff, ret);
 							if (! HttpGetChunk((Stream_HTTP far *)ss->stream, buff, ret, &headersParsed)) {
 								LPARAM connect_state;
-									 GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
-									SetStatusText(ss->stream->window->tab, "Connection closed");
-									 if (connect_state != CONNECT_STATE_CONNECTING) {
-										 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
+								GetCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, &connect_state, NULL);
+								SetStatusText(ss->stream->window->tab, "Connection closed");
+								if (connect_state != CONNECT_STATE_CONNECTING) {
+									 AddCustomTaskVar(ss->stream->task, RUN_TASK_VAR_CONNECT_STATE, CONNECT_STATE_CLOSED);
 																	
-										if (ss->s != INVALID_SOCKET) closesocket(ss->s);
-										ss->s = INVALID_SOCKET;
-									 }
-							}
-							if (headersParsed) {
-									
+									if (ss->s != INVALID_SOCKET) closesocket(ss->s);
+									ss->s = INVALID_SOCKET;
+								}
 							}
 					}
                     LocalFree((void far *)buff);
