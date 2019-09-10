@@ -11,6 +11,8 @@
 *.opt
 *.plg
 *.EXE
+*.LK1
+*.MAP
 .DS_Store
 ._.DS_Store
 *.obj
