@@ -1,7 +1,6 @@
 #ifndef _IVOYAGER_H_
 #define _IVOYAGER_H_
 
-#include <windows.h>
 
 // detect borland turbo C win3.1
 #if defined(__TURBOC__) && defined(__MSDOS__) && defined(_Windows)
@@ -10,6 +9,15 @@
 #define WIN3_1
 #endif
 
+#if defined(_WIN32) || defined(WIN3_1)
+#define OS_WINDOWS
+#include <windows.h>
+#elif defined(OS_LINUX)
+#include "Wincross.h"
+#ifdef USE_NCURSES
+#include <ncurses.h>
+#endif
+#endif
 
 #ifdef WIN3_1
 #include <string.h>
@@ -33,8 +41,8 @@ typedef struct Tab Tab;
 typedef struct ContentWindow ContentWindow;
 typedef struct Task Task;
 
-#include "task.h"
-#include "dom.h"
-#include "tabs.h"
+#include "Task.h"
+#include "Dom.h"
+#include "Tabs.h"
 
 #endif
